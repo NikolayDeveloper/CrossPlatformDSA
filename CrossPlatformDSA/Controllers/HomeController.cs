@@ -6,15 +6,18 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using CrossPlatformDSA.Models;
+using CrossPlatformDSA.DSA.Interfaces;
 
 namespace CrossPlatformDSA.Controllers
 {
     public class HomeController : Controller
     {
+        private readonly ILibrary _lib;
         private readonly ILogger<HomeController> _logger;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger,ILibrary library)
         {
+            _lib = library;
             _logger = logger;
         }
 

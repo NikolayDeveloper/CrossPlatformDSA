@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CrossPlatformDSA.DSA.Interfaces;
+using CrossPlatformDSA.DSA.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -23,6 +25,16 @@ namespace CrossPlatformDSA
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            if(Environment.OSVersion.Platform.ToString()== "Win32NT")
+            {
+                services.AddSingleton<ILibrary, WindowsLib>();
+            }
+            else
+            {
+                services.AddSingleton<ILibrary, LinuxLib>();
+            }
+           
+           
             services.AddControllersWithViews();
         }
 
@@ -31,6 +43,7 @@ namespace CrossPlatformDSA
         {
             if (env.IsDevelopment())
             {
+               var sdf= Environment.OSVersion.Platform;
                var d= env.EnvironmentName;
                 app.UseDeveloperExceptionPage();
             }
