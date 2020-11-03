@@ -1,7 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using CrossPlatformDSA.DSA.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CrossPlatformDSA.Controllers
@@ -13,9 +18,26 @@ namespace CrossPlatformDSA.Controllers
             return View();
         }
         [HttpPost]
-        public IActionResult MakeCMS()
+        public async Task<string> FileForCMS([Required]IFormFile file)
         {
-            return View();
+            string contextOfFile;
+            Stream stream = file.OpenReadStream();
+            try
+            {
+                using (StreamReader sr = new StreamReader(stream))
+                {
+                    contextOfFile = await sr.ReadToEndAsync();
+                    Preserver.data = Protector.Encrypt(contextOfFile, "passwordForEncryption");
+                }
+            }
+            catch (Exception ex)
+            {
+
+                var dsf = ex.Message;
+            }
+            
+            //string sdg = Protector.Decrypt(Preserver.data, "passwordForEncryption");
+            return Preserver.data;
         }
     }
 }

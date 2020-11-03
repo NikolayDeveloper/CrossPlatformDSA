@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CrossPlatformDSA.DSA.Interfaces
+namespace CrossPlatformDSA.DSA.Models
 {
-    public interface ILibrary
+    public class Preserver
     {
-       bool VerifyData(byte[] data);
+        public static string data = "";
     }
 }

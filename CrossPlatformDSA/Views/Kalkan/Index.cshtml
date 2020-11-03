@@ -5,3 +5,11 @@
 
     <h1>Проверить</h1>
 
+   <form  asp-controller="Kalkan" asp-action="VerifyCMS" method="post" enctype="multipart/form-data">
+       <div>
+           <label for="fleId">Выбрать файл для проверки</label>
+           <input type="file" class="form-control-file" name="file" id="fleId" required />
+           <button type="submit">Проверить</button>
+       </div>
+   </form>
+
