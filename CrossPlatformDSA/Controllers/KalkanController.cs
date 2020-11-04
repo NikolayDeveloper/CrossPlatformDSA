@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CrossPlatformDSA.DSA.Interfaces;
+using CrossPlatformDSA.DSA.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,13 +28,14 @@ namespace CrossPlatformDSA.Controllers
         {
             byte [] arr;
             Stream stream= file.OpenReadStream();
+            UserCertInfo userCertInfo=null;
             using (BinaryReader sr = new BinaryReader(stream))
             {
                 arr=  sr.ReadBytes(Convert.ToInt32(stream.Length));
             }
             try
             {
-                if (_lib.VerifyData(arr))
+                if (_lib.VerifyData(arr,out userCertInfo))
                 {
                     ViewBag.Message = "Проверка прошла успешно";
                 }
@@ -47,7 +49,13 @@ namespace CrossPlatformDSA.Controllers
                 ViewBag.Message += ex.Message;
             }
             ViewBag.Platform = Environment.OSVersion.Platform.ToString();
-            return View();
+            return View(userCertInfo);
+        }
+        [HttpPost]
+        public FileResult GetFile()
+        {
+            string df = Url.Content("sometext.txt");
+            return PhysicalFile(Path.Combine(Environment.CurrentDirectory, "sometext.txt"), "application/octet-stream", "downloadFile.txt");
         }
     }
 }

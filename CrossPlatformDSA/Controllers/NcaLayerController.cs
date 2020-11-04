@@ -20,24 +20,14 @@ namespace CrossPlatformDSA.Controllers
         [HttpPost]
         public async Task<string> FileForCMS([Required]IFormFile file)
         {
-            string contextOfFile;
-            Stream stream = file.OpenReadStream();
-            try
+            byte[] bytes = null;
+            // считываем переданный файл в массив байтов
+            using (var binaryReader = new BinaryReader(file.OpenReadStream()))
             {
-                using (StreamReader sr = new StreamReader(stream))
-                {
-                    contextOfFile = await sr.ReadToEndAsync();
-                    Preserver.data = Protector.Encrypt(contextOfFile, "passwordForEncryption");
-                }
+                bytes = binaryReader.ReadBytes((int)file.Length);
             }
-            catch (Exception ex)
-            {
-
-                var dsf = ex.Message;
-            }
-            
-            //string sdg = Protector.Decrypt(Preserver.data, "passwordForEncryption");
-            return Preserver.data;
+            string fileBase64 = Convert.ToBase64String(bytes);
+            return fileBase64;
         }
     }
 }

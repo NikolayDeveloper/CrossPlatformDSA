@@ -16,7 +16,8 @@ function createCMSSignatureFromBase64Call() {
 	}).done(function (data) {
 		if (data !== null && data !== "") {
 			var flag = true;
-			// Подписываем base64 string 
+			//console.log("data:  ", data);
+			// Подписываем base64 string
 			createCMSSignatureFromBase64("PKCS12", "SIGNATURE", data, flag, "createCMSSignatureFromBase64Back");
 		} else {
 			alert("Нет данных для подписи!");
