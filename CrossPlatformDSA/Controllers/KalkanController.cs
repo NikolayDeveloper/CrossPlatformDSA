@@ -54,7 +54,6 @@ namespace CrossPlatformDSA.Controllers
         [HttpPost]
         public FileResult GetFile()
         {
-            string df = Url.Content("sometext.txt");
             return PhysicalFile(Path.Combine(Environment.CurrentDirectory, "sometext.txt"), "application/octet-stream", "downloadFile.txt");
         }
     }

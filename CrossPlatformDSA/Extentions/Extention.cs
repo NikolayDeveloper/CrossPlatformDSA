@@ -8,7 +8,7 @@ namespace CrossPlatformDSA
 {
     public static class Extention
     {
-        public static string ConvertToHexError(ulong digit)
+        public static string ConvertToHexError(this ulong digit)
         {
             string strHex = "0x0" + digit.ToString("X");
             return strHex;
