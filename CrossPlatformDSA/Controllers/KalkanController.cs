@@ -28,7 +28,7 @@ namespace CrossPlatformDSA.Controllers
         {
             byte [] arr;
             Stream stream= file.OpenReadStream();
-            UserCertInfo userCertInfo=null;
+            UserCertInfo userCertInfo = null;
             using (BinaryReader sr = new BinaryReader(stream))
             {
                 arr=  sr.ReadBytes(Convert.ToInt32(stream.Length));

@@ -108,15 +108,30 @@ namespace CrossPlatformDSA.DSA.Models
         public UserCertInfo GetUserCertificate(byte[] cert, ref byte base64ByteCMS)
         {
             string str;
+
             UserCertInfo userCertInfo = new UserCertInfo();
-           var f= X509CertificateGetInfo(ref cert[0], outCertLength, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_COMMONNAME,out outDataInfo[0],ref outDataInfoLength);
-            userCertInfo.nameAndSurname=outDataInfo.GetString();
-            outDataInfoLength=1000;
-             var f2= X509CertificateGetInfo(ref cert[0], outCertLength, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_GIVENNAME,out outDataInfo[0],ref outDataInfoLength);
-            userCertInfo.middleName=outDataInfo.GetString();
-            outDataInfoLength=1000;
+            var f= X509CertificateGetInfo(ref cert[0], outCertLength, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_COMMONNAME,out outDataInfo[0],ref outDataInfoLength);
+            //userCertInfo.nameAndSurname=outDataInfo.GetString();
+            userCertInfo.nameAndSurname = System.Text.Encoding.UTF8.GetString(outDataInfo, 0, outDataInfoLength-1);
+
+
+         
+            {
+                outDataInfoLength = 1000;
+                var f2 = X509CertificateGetInfo(
+                     ref cert[0], outCertLength,
+                     (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_GIVENNAME,
+                     out outDataInfo[0],
+                     ref outDataInfoLength
+                    );
+
+            }
+
+            userCertInfo.middleName= System.Text.Encoding.UTF8.GetString(outDataInfo,0,outDataInfoLength-1);
+            outDataInfoLength =1000;
             str= f.ConvertToHexError();
             bufSize = 1000;
+
             KC_GetLastErrorString(ref errStr[0], ref bufSize);
             str = errStr.GetString();
            
