@@ -24,6 +24,12 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="NcaLayer" asp-action="Index">Подписать</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Kalkan" asp-action="Index">Проверить</a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -43,6 +49,8 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script type="text/javascript" src="~/js/ncalayer.js" asp-append-version="true" charset="utf-8"></script>
+    <script type="text/javascript" src="~/js/process-ncalayer-calls.js" asp-append-version="true" charset="utf-8"></script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>

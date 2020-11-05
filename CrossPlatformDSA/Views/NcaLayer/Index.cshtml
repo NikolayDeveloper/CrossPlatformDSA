@@ -1,0 +1,16 @@
+﻿
+@{
+    ViewData["Title"] = "Подписать";
+}
+
+<h1>Подписать</h1>
+
+
+
+        <label for="fileId">Выбрать файл для подписи</label>
+      
+        <input type="file" class="form-control-file" id="fileId" name="file" required>
+
+        <button type="button" onclick="createCMSSignatureFromBase64Call()">Подписать</button>
+ 
+

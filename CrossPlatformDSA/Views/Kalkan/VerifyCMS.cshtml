@@ -1,0 +1,31 @@
+﻿@model CrossPlatformDSA.DSA.Models.UserCertInfo
+@{
+    ViewData["Title"] = "VerifyCMS";
+}
+
+<h1>VerifyCMS</h1>
+<div>
+  Message:  @ViewBag.Message
+</div>
+<div>
+   Platform:  @ViewBag.Platform
+</div>
+<div>
+    <h2>Информация о пользователе</h2>
+    <p>@Model?.nameAndSurname @Model?.middleName</p>
+    <p>@Model?.email</p>
+    <p>@Model?.IIN</p>
+    <p>@Model?.notBefore</p>
+    <p>@Model?.notAfter</p>
+    <p>@Model?.serialNumberCert</p>
+    <p>@Model?.signTime</p>
+    <p>@Model?.extraInfo</p>
+
+
+</div>
+<div>
+    <form asp-controller="Kalkan" asp-action="GetFile" method="post" enctype="multipart/form-data">
+        <button type="submit">Скачать исходный файл</button>
+    </form>
+</div>
+

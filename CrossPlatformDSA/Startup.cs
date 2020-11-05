@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CrossPlatformDSA.DSA.Interfaces;
+using CrossPlatformDSA.DSA.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -23,6 +26,17 @@ namespace CrossPlatformDSA
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.Configure<KestrelServerOptions>(Configuration.GetSection("Kestrel"));
+            if (Environment.OSVersion.Platform.ToString()== "Win32NT")
+            {
+                services.AddSingleton<ILibrary, WindowsLib>();
+            }
+            else
+            {
+                services.AddSingleton<ILibrary, LinuxLib>();
+            }
+           
+           
             services.AddControllersWithViews();
         }
 
@@ -31,6 +45,7 @@ namespace CrossPlatformDSA
         {
             if (env.IsDevelopment())
             {
+               var sdf= Environment.OSVersion.Platform;
                var d= env.EnvironmentName;
                 app.UseDeveloperExceptionPage();
             }
@@ -40,12 +55,21 @@ namespace CrossPlatformDSA
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-            app.UseHttpsRedirection();
-            app.UseStaticFiles();
 
-            app.UseRouting();
 
-            app.UseAuthorization();
+
+            {
+
+                app.UseHttpsRedirection();
+                app.UseStaticFiles();
+
+                app.UseRouting();
+
+                app.UseAuthorization();
+            }
+
+
+
 
             app.UseEndpoints(endpoints =>
             {
