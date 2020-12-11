@@ -3,3 +3,5 @@ obj/
 bin/
 *.orig
 LogDir/
+*.user
+packages/
