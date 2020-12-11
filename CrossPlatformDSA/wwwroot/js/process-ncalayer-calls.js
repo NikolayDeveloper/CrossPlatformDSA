@@ -28,18 +28,20 @@ function createCMSSignatureFromBase64Call() {
 function createCMSSignatureFromBase64Back(result) {
 	if (result['code'] === "500") {
 		alert(result['message']);
-	} else if (result['code'] === "200") {
-		var res = result['responseObject'];
-		console.log("res: ", res);
-		// Преобразовываем из base64 string to bytes array
-		const data = atob(res);
-		const array = Uint8Array.from(data, b => b.charCodeAt(0));
-		// Отправляем файл клиенту
-		var blob = new Blob([array], { type: "application/octet-stream" });
-		var link = document.createElement('a');
-	    link.href = window.URL.createObjectURL(blob);
-		link.download = fileName + '.cms';
-		link.click();
 	}
+	else
+		if (result['code'] === "200") {
+			var res = result['responseObject'];
+			console.log("res: ", res);
+			// Преобразовываем из base64 string to bytes array
+			const data = atob(res);
+			const array = Uint8Array.from(data, b => b.charCodeAt(0));
+			// Отправляем файл клиенту
+			var blob = new Blob([array], { type: "application/octet-stream" });
+			var link = document.createElement('a');
+			link.href = window.URL.createObjectURL(blob);
+			link.download = fileName + '.cms';
+			link.click();
+		}
 }
 

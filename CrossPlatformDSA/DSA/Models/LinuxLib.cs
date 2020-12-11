@@ -87,8 +87,12 @@ namespace CrossPlatformDSA.DSA.Models
                 try
                 {
                     userCertInfo = GetUserCertificate(outCert,ref arr[0]);
+
+
                     byte[]bytesFromBase64 = Convert.FromBase64String(outData.GetString());
                     System.IO.File.WriteAllBytes(System.IO.Path.Combine(Environment.CurrentDirectory,"sometext.txt"), bytesFromBase64);
+
+
                 }
                 catch (Exception ex)
                 {

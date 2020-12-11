@@ -39,6 +39,7 @@ namespace CrossPlatformDSA.DSA.Models
                 try
                 {
                     userCertInfo = GetUserCertificate(outCert, base64StrCMS);
+
                     byte[]bytesFromBase64 = Convert.FromBase64String(outData);
                     System.IO.File.WriteAllBytes(Path.Combine(Environment.CurrentDirectory,"sometext.txt"), bytesFromBase64);
                 }

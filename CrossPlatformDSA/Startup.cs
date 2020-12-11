@@ -27,6 +27,7 @@ namespace CrossPlatformDSA
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<KestrelServerOptions>(Configuration.GetSection("Kestrel"));
+
             if (Environment.OSVersion.Platform.ToString()== "Win32NT")
             {
                 services.AddSingleton<ILibrary, WindowsLib>();
