@@ -17,6 +17,31 @@ namespace CrossPlatformDSA.DSA.Models
         public DateTime signTime;
         public string serialNumberCert;
         public string extraInfo;
+        public string withDrawSignKeyInfo;
 
+        public string issuerCountryName;
+        public string issuerSopn;
+        public string issuerLocalityName;
+        public string issuerOrgName;
+        public string issuerOrgUnitName;
+        public string issuerCommonName;
+        public string subjectCountryName;
+        public string subjectSopn;
+        public string subjectLocalityName;
+        public string subjectOrgName;
+        public string subjectOrgUnitName;
+        public string subjectBc;
+        public string subjectDc;
+        public string keyUsage;
+
+        public string extKeyUsage;
+        public string authKeyId;
+        public string subjKeyId;
+        public string certSn;
+        public string issuerDn;
+        public string subjectDn;
+        public string signatureAlg;
+        public string pubkey;
+        public string policiesId;
     }
 }

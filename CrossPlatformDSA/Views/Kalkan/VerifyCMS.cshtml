@@ -12,15 +12,39 @@
 </div>
 <div>
     <h2>Информация о пользователе</h2>
-    <p>@Model?.nameAndSurname @Model?.middleName</p>
-    <p>@Model?.email</p>
-    <p>@Model?.IIN</p>
-    <p>@Model?.notBefore</p>
-    <p>@Model?.notAfter</p>
-    <p>@Model?.serialNumberCert</p>
-    <p>@Model?.signTime</p>
-    <p>@Model?.extraInfo</p>
-
+    <p>Проверка на отозванность: @Model?.withDrawSignKeyInfo</p>
+    <p>name and surname-Общее имя субъекта: @Model?.nameAndSurname @Model?.middleName</p>
+    <p>email: @Model?.email</p>
+    <p>iin: @Model?.IIN</p>
+    <p>not before: @Model?.notBefore</p>
+    <p>notAfter: @Model?.notAfter</p>
+    <p>serialNumberCert-Серийный номер субъекта: @Model?.serialNumberCert</p>
+    <p>signTime: @Model?.signTime</p>
+    <p>extraInfo: @Model?.extraInfo</p>
+    <p>issuerCountryName-Страна издателя: @Model?.issuerCountryName</p>
+    <p>issuerSopn-Название штата или провинции издателя: @Model?.issuerSopn</p>
+    <p>issuerLocalityName-Населённый пункт издателя: @Model?.issuerLocalityName</p>
+    <p>issuerOrgName-Наименование организации издателя: @Model?.issuerOrgName</p>
+    <p>issuerOrgUnitName-Название организационного подразделения издателя: @Model?.issuerOrgUnitName</p>
+    <p>issuerCommonName-Имя Фамилия издателя: @Model?.issuerCommonName</p>
+    <p>subjectCountryName-Страна субъекта: @Model?.subjectCountryName</p>
+    <p>subjectSopn-Название штата или провинции субъекта: @Model?.subjectSopn</p>
+    <p>subjectLocalityName-Населенный пункт субъекта: @Model?.subjectLocalityName</p>
+    <p>subjectOrgName-Наименование организации субъекта: @Model?.subjectOrgName</p>
+    <p>subjectOrgUnitName-Название организационного подразделения субъекта: @Model?.subjectOrgUnitName</p>
+    <p>subjectBc-Бизнес категория субъекта: @Model?.subjectBc</p>
+    <p>subjectDc-Доменный компонент субъекта: @Model?.subjectDc</p>
+    <p>keyUsage-Использование ключа: @Model?.keyUsage</p>
+    <p>extKeyUsage-Расширенное использование ключа: @Model?.extKeyUsage</p>
+    <p>authKeyId-Идентификатор ключа центра сертификации: @Model?.authKeyId</p>
+    <p>subjKeyId-Идентификатор ключа субъекта: @Model?.subjKeyId</p>
+    <p>certSn-Серийный номер сертификата: @Model?.certSn</p>
+    <p>issuerDn-Отличительное имя издателя: @Model?.issuerDn</p>
+    <p>subjectDn-Отличительное имя субъекта: @Model?.subjectDn</p>
+    <p>signatureAlg-Алгоритм подписи: @Model?.signatureAlg</p>
+    <p>pubkey-Получение открытого ключа: @Model?.pubkey</p>
+    <p>policiesId-Получение идентификатора политики сертификата: @Model?.policiesId</p>
+   
 
 </div>
 <div>
