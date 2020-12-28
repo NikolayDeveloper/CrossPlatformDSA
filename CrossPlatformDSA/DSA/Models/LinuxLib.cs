@@ -83,6 +83,10 @@ namespace CrossPlatformDSA.DSA.Models
             Init();
             KC_TSASetUrl($"http://tsp.pki.gov.kz:80");
             KC_GetLastErrorString(ref errStr[0], ref bufSize);
+            
+           
+            
+            
             var f2 = VerifyData("", kalkanFlag, ref dataRandom[0], dataRandom.Length, out arr[0], arr.Length,
                                 out outData[0], out outDataLen, out outVerifyInfo[0], out outVerifyInfoLen,
                                 inCertID, out outCert[0], out outCertLength);
@@ -92,7 +96,12 @@ namespace CrossPlatformDSA.DSA.Models
             var d2 = outVerifyInfo.GetString();
             var d3 = outCert.GetString();
 
-           
+            ocspPath = System.Text.Encoding.UTF8.GetBytes(OCSP_PATH);
+            X509ValidateCertificate(ref outCert[0], outCertLength, oCSPType, ref ocspPath[0], currentLocalUnixTime, out outInfo[0], out outInfoLength);
+            bufSize = 10000;
+            KC_GetLastErrorString(ref errStr[0], ref bufSize);
+
+
             bufSize = 1000;
             KC_GetLastErrorString(ref errStr[0], ref bufSize);
             str = errStr.GetString();
@@ -125,12 +134,12 @@ namespace CrossPlatformDSA.DSA.Models
             }
             try
             {
-                ocspPath = OCSP_PATH.GetBytes();
+                ocspPath = System.Text.Encoding.UTF8.GetBytes(OCSP_PATH);
                 X509ValidateCertificate(ref outCert[0], outCertLength, oCSPType, ref ocspPath[0], currentLocalUnixTime, out outInfo[0], out outInfoLength);
                 bufSize = 10000;
                 KC_GetLastErrorString(ref errStr[0], ref bufSize);
-                str = errStr.GetString();
-                if(str=="")
+                str = System.Text.Encoding.UTF8.GetString(errStr);
+                if (str=="")
                 {
                     userCertInfo.withDrawSignKeyInfo = System.Text.Encoding.UTF8.GetString(outInfo, 0, outInfoLength - 1);
                 }

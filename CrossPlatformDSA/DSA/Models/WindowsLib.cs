@@ -119,7 +119,7 @@ namespace CrossPlatformDSA.DSA.Models
             }
 
 
-            //TODO проверить сертификат на отозванность
+            // TODO проверить сертификат на отозванность
 
 
 
