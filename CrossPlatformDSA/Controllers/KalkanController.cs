@@ -13,10 +13,10 @@ namespace CrossPlatformDSA.Controllers
 {
     public class KalkanController : Controller
     {
-        private readonly ILibrary _lib;
-        public KalkanController(ILibrary library)
+        private readonly IECPService _espService;
+        public KalkanController(IECPService espService)
         {
-            _lib = library;
+            _espService = espService;
         }
         public IActionResult Index()
         {
@@ -26,16 +26,16 @@ namespace CrossPlatformDSA.Controllers
         [HttpPost]
         public IActionResult VerifyCMS([Required]IFormFile file)
         {
-            byte [] arr;
+            byte [] cms;
             Stream stream= file.OpenReadStream();
             UserCertInfo userCertInfo = null;
             using (BinaryReader sr = new BinaryReader(stream))
             {
-                arr=  sr.ReadBytes(Convert.ToInt32(stream.Length));
+                cms = sr.ReadBytes(Convert.ToInt32(stream.Length));
             }
             try
             {
-                if (_lib.VerifyData(arr,out userCertInfo))
+                if (_espService.VerifyData(cms, out userCertInfo))
                 {
                     ViewBag.Message = "Проверка прошла успешно";
                 }
@@ -47,6 +47,7 @@ namespace CrossPlatformDSA.Controllers
             catch (Exception ex)
             {
                 ViewBag.Message += ex.Message;
+                ViewBag.InnerException=ex.InnerException;
             }
             ViewBag.Platform = Environment.OSVersion.Platform.ToString();
             return View(userCertInfo);

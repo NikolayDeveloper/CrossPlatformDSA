@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using CrossPlatformDSA.DSA.Interfaces;
 using CrossPlatformDSA.DSA.Models;
@@ -28,16 +29,16 @@ namespace CrossPlatformDSA
         {
             services.Configure<KestrelServerOptions>(Configuration.GetSection("Kestrel"));
 
-            if (Environment.OSVersion.Platform.ToString()== "Win32NT")
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                services.AddSingleton<ILibrary, WindowsLib>();
+                services.AddSingleton<IECPService, ECPServiceWin>();
             }
             else
             {
-                services.AddSingleton<ILibrary, LinuxLib>();
+                services.AddSingleton<IECPService, ECPServiceLinux>();
             }
-           
-           
+
+
             services.AddControllersWithViews();
         }
 

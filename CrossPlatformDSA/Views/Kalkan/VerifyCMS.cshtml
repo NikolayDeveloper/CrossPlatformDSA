@@ -5,7 +5,10 @@
 
 <h1>VerifyCMS</h1>
 <div>
-  Message:  @ViewBag.Message
+  Message:  @ViewBag?.Message
+</div>
+<div>
+    InnerException:  @ViewBag?.InnerException
 </div>
 <div>
    Platform:  @ViewBag.Platform
@@ -19,7 +22,7 @@
     <p>not before: @Model?.notBefore</p>
     <p>notAfter: @Model?.notAfter</p>
     <p>serialNumberCert-Серийный номер субъекта: @Model?.serialNumberCert</p>
-    <p>signTime: @Model?.signTime</p>
+    <p>signTime:Время подписи:  @Model?.signTime</p>
     <p>extraInfo: @Model?.extraInfo</p>
     <p>issuerCountryName-Страна издателя: @Model?.issuerCountryName</p>
     <p>issuerSopn-Название штата или провинции издателя: @Model?.issuerSopn</p>

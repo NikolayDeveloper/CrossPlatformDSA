@@ -12,10 +12,10 @@ namespace CrossPlatformDSA.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILibrary _lib;
+        private readonly IECPService _lib;
         private readonly ILogger<HomeController> _logger;
 
-        public HomeController(ILogger<HomeController> logger,ILibrary library)
+        public HomeController(ILogger<HomeController> logger, IECPService library)
         {
             _lib = library;
             _logger = logger;
