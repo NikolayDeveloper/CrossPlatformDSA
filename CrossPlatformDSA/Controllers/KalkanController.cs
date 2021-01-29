@@ -46,8 +46,9 @@ namespace CrossPlatformDSA.Controllers
             }
             catch (Exception ex)
             {
-                ViewBag.Message += ex.Message;
-                ViewBag.InnerException=ex.InnerException;
+                // ViewBag.Message += ex.Message;
+                userCertInfo.extraInfo = ex.Message;
+                //ViewBag.InnerException=ex.InnerException;
             }
             ViewBag.Platform = Environment.OSVersion.Platform.ToString();
             return View(userCertInfo);

@@ -10,6 +10,7 @@ namespace CrossPlatformDSA.DSA.Models
 {
     public class ECPServiceWin : IECPService
     {
+        private UserCertInfo UserCertInfo { get; set; }
         private string OCSP_PATH = "http://ocsp.pki.gov.kz/";
         KalkanCryptCOMLib.KalkanCryptCOM _kalkan;
         private int kalkanFlag;
@@ -26,24 +27,39 @@ namespace CrossPlatformDSA.DSA.Models
         }
         public bool VerifyData(byte[] data, out UserCertInfo userCertInfo)
         {
-            userCertInfo = null;
+            string errorCode;
+            userCertInfo = new UserCertInfo();
+            string str;
             bool res = false;
             string base64StrCMS;
             base64StrCMS = Convert.ToBase64String(data);
-            kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS +
-                   (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_IN_BASE64 +
-                   (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_OUT_BASE64 +
+            kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS |
+                   (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_IN_BASE64 |
+                   (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_OUT_BASE64 |
                    (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
+           // используем этот метод первым, чтобы вытащить сертификат
             _kalkan.VerifyData("", kalkanFlag, 1, "", base64StrCMS, out outData, out outVerifyInfo, out outCert);
-            _kalkan.GetLastErrorString(out errStr, out err);
-
+           _kalkan.GetLastErrorString(out errStr, out err);
+            userCertInfo.ErrorExpiredOrInvalidWithoutKC_NOCHECKCERTTIME = err.SpecificCodeError(errStr, "проверка успешная без флага KC_NOCHECKCERTTIME");
+            errorCode =err.ConvertToHexErrorUint();
+            //Если при проверке подписи выходит ошибка -0x08F00042, то сертификат просрочен.
+            //Для игнорирования данной ошибки следует добавить флаг: kalkanFlags += KC_NOCHECKCERTTIME
+            if (errorCode== "0x08F00042")
+            {
+                kalkanFlag |= (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_NOCHECKCERTTIME;
+                _kalkan.VerifyData("", kalkanFlag, 1, "", base64StrCMS, out outData, out outVerifyInfo, out outCert);
+                _kalkan.GetLastErrorString(out errStr, out err);
+                userCertInfo.WarningExpiredOrInvalidWithKC_NOCHECKCERTTIME = err.SpecificCodeError(errStr,null);
+            }
             if (err == 0)
             {
-                res = true;
+                userCertInfo.CMSvalidateMessage = err.SpecificCodeError(errStr,"Цифровая подпись прошла проверку");
+
                 try
                 {
-                    userCertInfo = GetUserCertificate(outCert, base64StrCMS);
-
+                    //получаем сведенья о сертификате вклячая отметку времени на момент подписания файла
+                    GetUserCertificate(outCert, base64StrCMS, userCertInfo);
+                    // записываем в файл подписанные данные
                     byte[] bytesFromBase64 = Convert.FromBase64String(outData);
                     System.IO.File.WriteAllBytes(Path.Combine(Environment.CurrentDirectory, "sometext.txt"), bytesFromBase64);
                 }
@@ -53,36 +69,78 @@ namespace CrossPlatformDSA.DSA.Models
                 }
                 try
                 {
-
-                    string crlPath = Path.Combine(Environment.CurrentDirectory, "nca_rsa.crl"); //@"D:\Nikolay\WEB_git\CrossPlatformDSA\CrossPlatformDSA\nca_rsa.crl";
                     // Проверка сертификата на отозванность на основе удостоверяющего центра OCSP
-                    //_kalkan.X509ValidateCertificate(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_VALIDTYPE.KC_USE_OCSP, OCSP_PATH, currentLocalTime, out outInfo);
-                    _kalkan.X509ValidateCertificate(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_VALIDTYPE.KC_USE_CRL, crlPath, currentLocalTime, out outInfo);
+                    _kalkan.X509ValidateCertificate(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_VALIDTYPE.KC_USE_OCSP, OCSP_PATH, currentLocalTime, out outInfo);
                     _kalkan.GetLastErrorString(out errStr, out err);
+                    errorCode = err.ConvertToHexErrorUint();
                     if (err != 0)
                     {
-                        userCertInfo.extraInfo = errStr;
+                        userCertInfo.validCertificateMessage_ocsp = err.SpecificCodeError(errStr, null);
+                    }
+                    else if(err == 0)
+                    {
+                        userCertInfo.validCertificateMessage_ocsp = err.SpecificCodeError(errStr, " удостоверяющий центр опознан");
+                    }
+
+                    // Проверка сертификата на отозванность на основе скачаного файла crl в котором находится список отозванных сертификатов из pki.gov.kz 
+                    // Срок годности crl файла 1 день. Если мы хотим пользоваться crl нам нужно каждый день скачивать из https://pki.gov.kz/ новый crl файл, иначе он будет считаться истекшим
+                    // ошибка будет такого рода crl expired
+                    string crlPathRSA = Path.Combine(Environment.CurrentDirectory, "nca_rsa.crl");
+                    string crlPathGOST = Path.Combine(Environment.CurrentDirectory, "nca_gost.crl");
+                   // на основе алгоритма шифрование выберем соответствующий crl файл
+                    if (userCertInfo.signatureAlg.Contains("RSA"))
+                    {
+                        _kalkan.X509ValidateCertificate(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_VALIDTYPE.KC_USE_CRL, crlPathRSA, currentLocalTime, out outInfo);
+                        _kalkan.GetLastErrorString(out errStr, out err);
+                        if (err != 0)
+                        {
+                            userCertInfo.validCertificateMessage_crl = err.SpecificCodeError(errStr, null);
+                        }
+                        else
+                        {
+                            userCertInfo.validCertificateMessage_crl = err.SpecificCodeError(errStr, " удостоверяющий центр опознан");
+                        }
+                    }
+                    else if (userCertInfo.signatureAlg.Contains("GOST"))
+                    {
+                        _kalkan.X509ValidateCertificate(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_VALIDTYPE.KC_USE_CRL, crlPathGOST, currentLocalTime, out outInfo);
+                        _kalkan.GetLastErrorString(out errStr, out err);
+                        if (err != 0)
+                        {
+                            userCertInfo.validCertificateMessage_crl = err.SpecificCodeError(errStr, null);
+                        }
+                        else
+                        {
+                            userCertInfo.validCertificateMessage_crl = err.SpecificCodeError(errStr, " удостоверяющий центр опознан");
+                        }
                     }
                     else
                     {
-                        userCertInfo.withDrawSignKeyInfo = outInfo;
+                        throw new Exception($"В {userCertInfo.signatureAlg} нет метода шифрования как GOST or RSA");
                     }
+                   
+                    res = true;
                 }
                 catch (Exception ex)
                 {
 
-                    userCertInfo.extraInfo = ex.Message;
+                    userCertInfo.extraInfo = ex.Message+": errStr: "+errStr;
                 }
-
-
+            }
+            else
+            {
+                userCertInfo.CMSvalidateMessage = err.SpecificCodeError(errStr, null);
             }
             return res;
         }
-        public UserCertInfo GetUserCertificate(string cert, string base64StrCMS)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="cert"></param>
+        /// <param name="base64StrCMS"></param>
+        /// <param name="userCertInfo"></param>
+        public void GetUserCertificate(string cert, string base64StrCMS,  UserCertInfo userCertInfo)
         {
-            
-        
-            UserCertInfo userCertInfo = new UserCertInfo();
             _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_COMMONNAME, out userCertInfo.nameAndSurname);
           
             _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_GIVENNAME, out userCertInfo.middleName);
@@ -123,17 +181,12 @@ namespace CrossPlatformDSA.DSA.Models
             if (err == 0)
             {
                 userCertInfo.signTime = dateTime.AddSeconds(outDateTime).ToLocalTime();
+                userCertInfo.TSP_exists = new KeyValuePair<string, bool>("Успешно",true);
             }
-
-
-            // TODO проверить сертификат на отозванность
-
-
-
-           // _kalkan.TSASetUrl
-           // _kalkan.GetLastErrorString(out errStr, out err);
-
-            return userCertInfo;
+            else
+            {
+                userCertInfo.TSP_exists = new KeyValuePair<string, bool>("Не успешно", false);
+            }
         }
 
         public byte[] GetFile(byte[] cms)

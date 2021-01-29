@@ -4,18 +4,34 @@
 }
 
 <h1>VerifyCMS</h1>
+<div>Результат проверки TSP: @Model?.TSP_exists.Key @Model?.TSP_exists.Value</div>
+<div>-------------------------------------------------------------------------------------</div>
+<div>Сертификат истекший или не валидный: @Model?.ErrorExpiredOrInvalidWithoutKC_NOCHECKCERTTIME.Key @Model?.ErrorExpiredOrInvalidWithoutKC_NOCHECKCERTTIME.Value</div>
+<div>-------------------------------------------------------------------------------------</div>
+<div>Предупреждение что сертификат истекший или не валидный: @Model?.WarningExpiredOrInvalidWithKC_NOCHECKCERTTIME.Key @Model?.WarningExpiredOrInvalidWithKC_NOCHECKCERTTIME.Value</div>
+<div>-------------------------------------------------------------------------------------</div>
+<div>Проверка целостности подписи: @Model?.CMSvalidateMessage.Key @Model?.CMSvalidateMessage.Value</div>
+<div>-------------------------------------------------------------------------------------</div>
+<div>Проверка на отозванность через ocsp: @Model?.validCertificateMessage_ocsp.Key @Model?.validCertificateMessage_ocsp.Value</div>
+<div>-------------------------------------------------------------------------------------</div>
+<div>Проверка на отозванность через crl: @Model?.validCertificateMessage_crl.Key @Model?.validCertificateMessage_crl.Value</div>
+<div>-------------------------------------------------------------------------------------</div>
+<div>Ошибка сервера тут: @Model?.extraInfo</div>
+<div>-------------------------------------------------------------------------------------</div>
 <div>
-  Message:  @ViewBag?.Message
+    общий ответ:  @ViewBag?.Message
+</div>
+<div>-------------------------------------------------------------------------------------</div>
+@*<div>
+        InnerException:  @ViewBag?.InnerException
+    </div>*@
+<div>
+    Platform:  @ViewBag.Platform
 </div>
 <div>
-    InnerException:  @ViewBag?.InnerException
-</div>
-<div>
-   Platform:  @ViewBag.Platform
-</div>
-<div>
+    <div>-------------------------------------------------------------------------------------</div>
     <h2>Информация о пользователе</h2>
-    <p>Проверка на отозванность: @Model?.withDrawSignKeyInfo</p>
+
     <p>name and surname-Общее имя субъекта: @Model?.nameAndSurname @Model?.middleName</p>
     <p>email: @Model?.email</p>
     <p>iin: @Model?.IIN</p>
@@ -23,7 +39,7 @@
     <p>notAfter: @Model?.notAfter</p>
     <p>serialNumberCert-Серийный номер субъекта: @Model?.serialNumberCert</p>
     <p>signTime:Время подписи:  @Model?.signTime</p>
-    <p>extraInfo: @Model?.extraInfo</p>
+
     <p>issuerCountryName-Страна издателя: @Model?.issuerCountryName</p>
     <p>issuerSopn-Название штата или провинции издателя: @Model?.issuerSopn</p>
     <p>issuerLocalityName-Населённый пункт издателя: @Model?.issuerLocalityName</p>
@@ -47,7 +63,7 @@
     <p>signatureAlg-Алгоритм подписи: @Model?.signatureAlg</p>
     <p>pubkey-Получение открытого ключа: @Model?.pubkey</p>
     <p>policiesId-Получение идентификатора политики сертификата: @Model?.policiesId</p>
-   
+
 
 </div>
 <div>

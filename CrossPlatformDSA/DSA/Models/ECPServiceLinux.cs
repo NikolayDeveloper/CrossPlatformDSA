@@ -103,7 +103,7 @@ namespace CrossPlatformDSA.DSA.Models
             {
                 SaveExtractedDataFromCMSToFile(outData);
                 userCertInfo = GetAllInfo(cms);
-                userCertInfo.withDrawSignKeyInfo = ValidateSertificate(outCert);
+               // userCertInfo.validCertificateMessage_ocsp = ValidateSertificate(outCert);
             }
             catch (Exception ex)
             {

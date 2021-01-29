@@ -7,6 +7,12 @@ namespace CrossPlatformDSA.DSA.Models
 {
     public class UserCertInfo
     {
+        public KeyValuePair<string,bool> TSP_exists;
+        public KeyValuePair<string, bool> ErrorExpiredOrInvalidWithoutKC_NOCHECKCERTTIME;
+        public KeyValuePair<string, bool> WarningExpiredOrInvalidWithKC_NOCHECKCERTTIME;
+        public KeyValuePair<string, bool> validCertificateMessage_ocsp;
+        public KeyValuePair<string, bool> validCertificateMessage_crl;
+        public KeyValuePair<string, bool> CMSvalidateMessage;
         public string nameAndSurname;
         public string surname;
         public string middleName;
@@ -17,7 +23,10 @@ namespace CrossPlatformDSA.DSA.Models
         public DateTime signTime;
         public string serialNumberCert;
         public string extraInfo;
-        public string withDrawSignKeyInfo;
+        //public string extraInfo_ocsp;
+        //public string extraInfo_crl;
+       // public string validCertificateMessage_ocsp;
+        //public string validCertificateMessage_crl;
 
         public string issuerCountryName;
         public string issuerSopn;

@@ -8,11 +8,69 @@ namespace CrossPlatformDSA
 {
     public static class Extention
     {
+        /// <summary>
+        ///  возвращает строку с пояснением на русском языке и bool результат проверки
+        /// </summary>
+        /// <param name="err">код ошибки</param>
+        /// <param name="errStr">расшифровка ошибки</param>
+        /// <param name="message">получение желаемой строки</param>
+        /// <returns></returns>
+        public static KeyValuePair<string,bool> SpecificCodeError(this uint err,string errStr,string message)
+        {
+            string CodeErrorHexToString = "0x0" + err.ToString("X");
+            KeyValuePair<string, bool> keyValue;
+            if (err == 0 && string.IsNullOrEmpty(errStr) && !string.IsNullOrEmpty(message))
+            {
+                keyValue = new KeyValuePair<string, bool>(message, true);
+            }
+            else if (err == 0 && !string.IsNullOrEmpty(errStr) && !string.IsNullOrEmpty(message))
+            {
+                keyValue = new KeyValuePair<string, bool>(message, true);
+            }
+            else if (err == 0 && string.IsNullOrEmpty(errStr) && string.IsNullOrEmpty(message))
+            {
+                keyValue = new KeyValuePair<string, bool>("Добавьте собщение в параметр message ", true);
+            }
+            else if (err == 0 && !string.IsNullOrEmpty(errStr) && string.IsNullOrEmpty(message))
+            {
+                keyValue = new KeyValuePair<string, bool>("Неизвестный удостоверяющий центр. Проверка цепочки сертификатов прошла неуспешно", false);
+            }
+            else if (CodeErrorHexToString== "0x08F00042" && !string.IsNullOrEmpty(errStr))
+            {
+                keyValue = new KeyValuePair<string,bool>("Неизвестный удостоверяющий центр. Проверка цепочки сертификатов прошла неуспешно", false);
+            }
+            else
+            {
+                keyValue = new KeyValuePair<string, bool>(errStr, false);
+            }
+            
+            return keyValue;
+        }
+        /// <summary>
+        /// перевод из цифрового значение ошибки в строку
+        /// </summary>
+        /// <param name="digit"></param>
+        /// <returns></returns>
         public static string ConvertToHexError(this ulong digit)
         {
             string strHex = "0x0" + digit.ToString("X");
             return strHex;
         }
+        /// <summary>
+        /// перевод из цифрового значение ошибки в строку
+        /// </summary>
+        /// <param name="digit"></param>
+        /// <returns></returns>
+        public static string ConvertToHexErrorUint(this uint digit)
+        {
+            string strHex = "0x0" + digit.ToString("X");
+            return strHex;
+        }
+        /// <summary>
+        /// получить байты из строки
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
         public static byte[] GetBytes(this string str)
         {
             byte[] arr = new byte[str.Length];
@@ -22,6 +80,11 @@ namespace CrossPlatformDSA
             }
             return arr;
         }
+        /// <summary>
+        /// получить строку из байт
+        /// </summary>
+        /// <param name="arr"></param>
+        /// <returns></returns>
         public static string GetString(this byte[] arr)
         {
             StringBuilder stringBuilder = new StringBuilder(200);
