@@ -8,7 +8,7 @@ namespace CrossPlatformDSA.DSA.Interfaces
 {
 	public interface IECPService
 	{
-		bool VerifyData(byte[] cms, out UserCertInfo userCertInfo);
+		bool VerifyData(byte[] cms, UserCertInfo userCertInfo);
 
 		byte[] GetFile(byte[] cms);
 		UserCertInfo GetInfo(byte[] cms);

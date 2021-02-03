@@ -16,7 +16,7 @@
 <div>-------------------------------------------------------------------------------------</div>
 <div>Проверка на отозванность через crl: @Model?.validCertificateMessage_crl.Key @Model?.validCertificateMessage_crl.Value</div>
 <div>-------------------------------------------------------------------------------------</div>
-<div>Ошибка сервера тут: @Model?.extraInfo</div>
+<div>Ошибка сервера тут: @Model?.ExtraInfo</div>
 <div>-------------------------------------------------------------------------------------</div>
 <div>
     общий ответ:  @ViewBag?.Message
@@ -32,37 +32,37 @@
     <div>-------------------------------------------------------------------------------------</div>
     <h2>Информация о пользователе</h2>
 
-    <p>name and surname-Общее имя субъекта: @Model?.nameAndSurname @Model?.middleName</p>
-    <p>email: @Model?.email</p>
+    <p>name and surname-Общее имя субъекта: @Model?.NameAndSurname @Model?.MiddleName</p>
+    <p>email: @Model?.Email</p>
     <p>iin: @Model?.IIN</p>
-    <p>not before: @Model?.notBefore</p>
-    <p>notAfter: @Model?.notAfter</p>
-    <p>serialNumberCert-Серийный номер субъекта: @Model?.serialNumberCert</p>
-    <p>signTime:Время подписи:  @Model?.signTime</p>
+    <p>not before: @Model?.NotBefore</p>
+    <p>notAfter: @Model?.NotAfter</p>
+    <p>serialNumberCert-Серийный номер субъекта: @Model?.SerialNumberCert</p>
+    <p>signTime:Время подписи:  @Model?.SignTime</p>
 
-    <p>issuerCountryName-Страна издателя: @Model?.issuerCountryName</p>
-    <p>issuerSopn-Название штата или провинции издателя: @Model?.issuerSopn</p>
-    <p>issuerLocalityName-Населённый пункт издателя: @Model?.issuerLocalityName</p>
-    <p>issuerOrgName-Наименование организации издателя: @Model?.issuerOrgName</p>
-    <p>issuerOrgUnitName-Название организационного подразделения издателя: @Model?.issuerOrgUnitName</p>
-    <p>issuerCommonName-Имя Фамилия издателя: @Model?.issuerCommonName</p>
-    <p>subjectCountryName-Страна субъекта: @Model?.subjectCountryName</p>
-    <p>subjectSopn-Название штата или провинции субъекта: @Model?.subjectSopn</p>
-    <p>subjectLocalityName-Населенный пункт субъекта: @Model?.subjectLocalityName</p>
-    <p>subjectOrgName-Наименование организации субъекта: @Model?.subjectOrgName</p>
-    <p>subjectOrgUnitName-Название организационного подразделения субъекта: @Model?.subjectOrgUnitName</p>
-    <p>subjectBc-Бизнес категория субъекта: @Model?.subjectBc</p>
-    <p>subjectDc-Доменный компонент субъекта: @Model?.subjectDc</p>
-    <p>keyUsage-Использование ключа: @Model?.keyUsage</p>
-    <p>extKeyUsage-Расширенное использование ключа: @Model?.extKeyUsage</p>
-    <p>authKeyId-Идентификатор ключа центра сертификации: @Model?.authKeyId</p>
-    <p>subjKeyId-Идентификатор ключа субъекта: @Model?.subjKeyId</p>
-    <p>certSn-Серийный номер сертификата: @Model?.certSn</p>
-    <p>issuerDn-Отличительное имя издателя: @Model?.issuerDn</p>
-    <p>subjectDn-Отличительное имя субъекта: @Model?.subjectDn</p>
-    <p>signatureAlg-Алгоритм подписи: @Model?.signatureAlg</p>
-    <p>pubkey-Получение открытого ключа: @Model?.pubkey</p>
-    <p>policiesId-Получение идентификатора политики сертификата: @Model?.policiesId</p>
+    <p>issuerCountryName-Страна издателя: @Model?.IssuerCountryName</p>
+    <p>issuerSopn-Название штата или провинции издателя: @Model?.IssuerSopn</p>
+    <p>issuerLocalityName-Населённый пункт издателя: @Model?.IssuerLocalityName</p>
+    <p>issuerOrgName-Наименование организации издателя: @Model?.IssuerOrgName</p>
+    <p>issuerOrgUnitName-Название организационного подразделения издателя: @Model?.IssuerOrgUnitName</p>
+    <p>issuerCommonName-Имя Фамилия издателя: @Model?.IssuerCommonName</p>
+    <p>subjectCountryName-Страна субъекта: @Model?.SubjectCountryName</p>
+    <p>subjectSopn-Название штата или провинции субъекта: @Model?.SubjectSopn</p>
+    <p>subjectLocalityName-Населенный пункт субъекта: @Model?.SubjectLocalityName</p>
+    <p>subjectOrgName-Наименование организации субъекта: @Model?.SubjectOrgName</p>
+    <p>subjectOrgUnitName-Название организационного подразделения субъекта: @Model?.SubjectOrgUnitName</p>
+    <p>subjectBc-Бизнес категория субъекта: @Model?.SubjectBc</p>
+    <p>subjectDc-Доменный компонент субъекта: @Model?.SubjectDc</p>
+    <p>keyUsage-Использование ключа: @Model?.KeyUsage</p>
+    <p>extKeyUsage-Расширенное использование ключа: @Model?.ExtKeyUsage</p>
+    <p>authKeyId-Идентификатор ключа центра сертификации: @Model?.AuthKeyId</p>
+    <p>subjKeyId-Идентификатор ключа субъекта: @Model?.SubjKeyId</p>
+    <p>certSn-Серийный номер сертификата: @Model?.CertSn</p>
+    <p>issuerDn-Отличительное имя издателя: @Model?.IssuerDn</p>
+    <p>subjectDn-Отличительное имя субъекта: @Model?.SubjectDn</p>
+    <p>signatureAlg-Алгоритм подписи: @Model?.SignatureAlg</p>
+    <p>pubkey-Получение открытого ключа: @Model?.Pubkey</p>
+    <p>policiesId-Получение идентификатора политики сертификата: @Model?.PoliciesId</p>
 
 
 </div>

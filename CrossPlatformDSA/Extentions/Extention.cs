@@ -35,15 +35,58 @@ namespace CrossPlatformDSA
             {
                 keyValue = new KeyValuePair<string, bool>("Неизвестный удостоверяющий центр. Проверка цепочки сертификатов прошла неуспешно", false);
             }
+            //Если при проверке подписи выходит ошибка -0x08F00042, то сертификат просрочен.
             else if (CodeErrorHexToString== "0x08F00042" && !string.IsNullOrEmpty(errStr))
             {
                 keyValue = new KeyValuePair<string,bool>("Неизвестный удостоверяющий центр. Проверка цепочки сертификатов прошла неуспешно", false);
+            }
+            // числ 12- это код ошибки , что crl файл истек и нужно скачать новую версию
+            else if (err == 12 && !string.IsNullOrEmpty(errStr))
+            {
+                keyValue = new KeyValuePair<string, bool>("crl файл истек, загрузите новую версию", false);
             }
             else
             {
                 keyValue = new KeyValuePair<string, bool>(errStr, false);
             }
             
+            return keyValue;
+        }
+        public static KeyValuePair<string, bool> SpecificCodeError(this ulong err, string errStr, string message)
+        {
+            string CodeErrorHexToString = "0x0" + err.ToString("X");
+            KeyValuePair<string, bool> keyValue;
+            if (err == 0 && string.IsNullOrEmpty(errStr) && !string.IsNullOrEmpty(message))
+            {
+                keyValue = new KeyValuePair<string, bool>(message, true);
+            }
+            else if (err == 0 && !string.IsNullOrEmpty(errStr) && !string.IsNullOrEmpty(message))
+            {
+                keyValue = new KeyValuePair<string, bool>(message, true);
+            }
+            else if (err == 0 && string.IsNullOrEmpty(errStr) && string.IsNullOrEmpty(message))
+            {
+                keyValue = new KeyValuePair<string, bool>("Добавьте собщение в параметр message ", true);
+            }
+            else if (err == 0 && !string.IsNullOrEmpty(errStr) && string.IsNullOrEmpty(message))
+            {
+                keyValue = new KeyValuePair<string, bool>("Неизвестный удостоверяющий центр. Проверка цепочки сертификатов прошла неуспешно", false);
+            }
+            //Если при проверке подписи выходит ошибка -0x08F00042, то сертификат просрочен.
+            else if (CodeErrorHexToString == "0x08F00042" && !string.IsNullOrEmpty(errStr))
+            {
+                keyValue = new KeyValuePair<string, bool>("Неизвестный удостоверяющий центр. Проверка цепочки сертификатов прошла неуспешно", false);
+            }
+            // числ 12- это код ошибки , что crl файл истек и нужно скачать новую версию
+            else if (err == 12 && !string.IsNullOrEmpty(errStr))
+            {
+                keyValue = new KeyValuePair<string, bool>("crl файл истек, загрузите новую версию", false);
+            }
+            else
+            {
+                keyValue = new KeyValuePair<string, bool>(errStr, false);
+            }
+
             return keyValue;
         }
         /// <summary>

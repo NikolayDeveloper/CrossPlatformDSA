@@ -28,14 +28,15 @@ namespace CrossPlatformDSA.Controllers
         {
             byte [] cms;
             Stream stream= file.OpenReadStream();
-            UserCertInfo userCertInfo = null;
+            UserCertInfo userCertInfo = new UserCertInfo();
             using (BinaryReader sr = new BinaryReader(stream))
             {
                 cms = sr.ReadBytes(Convert.ToInt32(stream.Length));
             }
             try
             {
-                if (_espService.VerifyData(cms, out userCertInfo))
+                userCertInfo = _espService.GetInfo(cms);
+                if (_espService.VerifyData(cms, userCertInfo))
                 {
                     ViewBag.Message = "Проверка прошла успешно";
                 }
@@ -43,11 +44,13 @@ namespace CrossPlatformDSA.Controllers
                 {
                     ViewBag.Message = "Проверка не прошла успешно";
                 }
+
+
             }
             catch (Exception ex)
             {
                 // ViewBag.Message += ex.Message;
-                userCertInfo.extraInfo = ex.Message;
+                userCertInfo.ExtraInfo = ex.Message;
                 //ViewBag.InnerException=ex.InnerException;
             }
             ViewBag.Platform = Environment.OSVersion.Platform.ToString();

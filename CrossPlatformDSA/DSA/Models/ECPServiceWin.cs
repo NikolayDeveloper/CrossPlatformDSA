@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace CrossPlatformDSA.DSA.Models
@@ -12,12 +14,11 @@ namespace CrossPlatformDSA.DSA.Models
     {
         private UserCertInfo UserCertInfo { get; set; }
         private string OCSP_PATH = "http://ocsp.pki.gov.kz/";
-        KalkanCryptCOMLib.KalkanCryptCOM _kalkan;
-        private int kalkanFlag;
-        private string outData, outVerifyInfo, outCert, errStr, outInfo;
-        uint err;
-        long outDateTime;
-        DateTime currentLocalTime = DateTime.Now;
+        public KalkanCryptCOMLib.KalkanCryptCOM _kalkan;
+        public string CENTER_DETERMINED_MESSAGE= "Удостоверяющий центр опознан";
+        //private int kalkanFlag;
+        //private string outData, outVerifyInfo, outCert, errStr, outInfo;
+        //uint err;
         DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc); // Время в формате unix систем
 
         public ECPServiceWin()
@@ -25,106 +26,67 @@ namespace CrossPlatformDSA.DSA.Models
             _kalkan = new KalkanCryptCOMLib.KalkanCryptCOM();
             _kalkan.Init();
         }
-        public bool VerifyData(byte[] data, out UserCertInfo userCertInfo)
+
+        #region public methods
+        /// <summary>
+        /// Проверка cms подписи на целостность, отозванность с помощью OCSP и CRL
+        /// </summary>
+        /// <param name="cms"></param>
+        /// <param name="userCertInfo"></param>
+        /// <returns></returns>
+        public bool VerifyData(byte[] cms, UserCertInfo userCertInfo)
         {
             string errorCode;
-            userCertInfo = new UserCertInfo();
-            string str;
+           // userCertInfo = new UserCertInfo();
+            string str, errStr, outData, outVerifyInfo, outCert;
+            uint err;
             bool res = false;
             string base64StrCMS;
-            base64StrCMS = Convert.ToBase64String(data);
-            kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS |
+            base64StrCMS = Convert.ToBase64String(cms);
+            int kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS |
                    (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_IN_BASE64 |
                    (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_OUT_BASE64 |
                    (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
-           // используем этот метод первым, чтобы вытащить сертификат
+            // используем этот метод первым, чтобы вытащить сертификат
             _kalkan.VerifyData("", kalkanFlag, 1, "", base64StrCMS, out outData, out outVerifyInfo, out outCert);
-           _kalkan.GetLastErrorString(out errStr, out err);
+            _kalkan.GetLastErrorString(out errStr, out err);
             userCertInfo.ErrorExpiredOrInvalidWithoutKC_NOCHECKCERTTIME = err.SpecificCodeError(errStr, "проверка успешная без флага KC_NOCHECKCERTTIME");
-            errorCode =err.ConvertToHexErrorUint();
+            errorCode = err.ConvertToHexErrorUint();
             //Если при проверке подписи выходит ошибка -0x08F00042, то сертификат просрочен.
             //Для игнорирования данной ошибки следует добавить флаг: kalkanFlags += KC_NOCHECKCERTTIME
-            if (errorCode== "0x08F00042")
+            if (errorCode == "0x08F00042")
             {
                 kalkanFlag |= (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_NOCHECKCERTTIME;
                 _kalkan.VerifyData("", kalkanFlag, 1, "", base64StrCMS, out outData, out outVerifyInfo, out outCert);
                 _kalkan.GetLastErrorString(out errStr, out err);
-                userCertInfo.WarningExpiredOrInvalidWithKC_NOCHECKCERTTIME = err.SpecificCodeError(errStr,null);
+                userCertInfo.WarningExpiredOrInvalidWithKC_NOCHECKCERTTIME = err.SpecificCodeError(errStr, null);
             }
             if (err == 0)
             {
-                userCertInfo.CMSvalidateMessage = err.SpecificCodeError(errStr,"Цифровая подпись прошла проверку");
+                userCertInfo.CMSvalidateMessage = err.SpecificCodeError(errStr, "Цифровая подпись прошла проверку");
 
                 try
                 {
-                    //получаем сведенья о сертификате вклячая отметку времени на момент подписания файла
-                    GetUserCertificate(outCert, base64StrCMS, userCertInfo);
                     // записываем в файл подписанные данные
-                    byte[] bytesFromBase64 = Convert.FromBase64String(outData);
-                    System.IO.File.WriteAllBytes(Path.Combine(Environment.CurrentDirectory, "sometext.txt"), bytesFromBase64);
+                    SaveExtractedDataFromCMSToFile(outData);
                 }
                 catch (Exception ex)
                 {
-                    userCertInfo.extraInfo = ex.Message;
+                    userCertInfo.ExtraInfo = ex.Message;
                 }
                 try
                 {
                     // Проверка сертификата на отозванность на основе удостоверяющего центра OCSP
-                    _kalkan.X509ValidateCertificate(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_VALIDTYPE.KC_USE_OCSP, OCSP_PATH, currentLocalTime, out outInfo);
-                    _kalkan.GetLastErrorString(out errStr, out err);
-                    errorCode = err.ConvertToHexErrorUint();
-                    if (err != 0)
-                    {
-                        userCertInfo.validCertificateMessage_ocsp = err.SpecificCodeError(errStr, null);
-                    }
-                    else if(err == 0)
-                    {
-                        userCertInfo.validCertificateMessage_ocsp = err.SpecificCodeError(errStr, " удостоверяющий центр опознан");
-                    }
-
+                    userCertInfo.validCertificateMessage_ocsp = ValidateSertificate_OCSP(outCert);
                     // Проверка сертификата на отозванность на основе скачаного файла crl в котором находится список отозванных сертификатов из pki.gov.kz 
                     // Срок годности crl файла 1 день. Если мы хотим пользоваться crl нам нужно каждый день скачивать из https://pki.gov.kz/ новый crl файл, иначе он будет считаться истекшим
                     // ошибка будет такого рода crl expired
-                    string crlPathRSA = Path.Combine(Environment.CurrentDirectory, "nca_rsa.crl");
-                    string crlPathGOST = Path.Combine(Environment.CurrentDirectory, "nca_gost.crl");
-                   // на основе алгоритма шифрование выберем соответствующий crl файл
-                    if (userCertInfo.signatureAlg.Contains("RSA"))
-                    {
-                        _kalkan.X509ValidateCertificate(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_VALIDTYPE.KC_USE_CRL, crlPathRSA, currentLocalTime, out outInfo);
-                        _kalkan.GetLastErrorString(out errStr, out err);
-                        if (err != 0)
-                        {
-                            userCertInfo.validCertificateMessage_crl = err.SpecificCodeError(errStr, null);
-                        }
-                        else
-                        {
-                            userCertInfo.validCertificateMessage_crl = err.SpecificCodeError(errStr, " удостоверяющий центр опознан");
-                        }
-                    }
-                    else if (userCertInfo.signatureAlg.Contains("GOST"))
-                    {
-                        _kalkan.X509ValidateCertificate(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_VALIDTYPE.KC_USE_CRL, crlPathGOST, currentLocalTime, out outInfo);
-                        _kalkan.GetLastErrorString(out errStr, out err);
-                        if (err != 0)
-                        {
-                            userCertInfo.validCertificateMessage_crl = err.SpecificCodeError(errStr, null);
-                        }
-                        else
-                        {
-                            userCertInfo.validCertificateMessage_crl = err.SpecificCodeError(errStr, " удостоверяющий центр опознан");
-                        }
-                    }
-                    else
-                    {
-                        throw new Exception($"В {userCertInfo.signatureAlg} нет метода шифрования как GOST or RSA");
-                    }
-                   
+                    userCertInfo.validCertificateMessage_crl = ValidateSertificate_CRl(outCert);
                     res = true;
                 }
                 catch (Exception ex)
                 {
-
-                    userCertInfo.extraInfo = ex.Message+": errStr: "+errStr;
+                    userCertInfo.ExtraInfo = ex.Message + ": errStr: " + errStr;
                 }
             }
             else
@@ -133,73 +95,195 @@ namespace CrossPlatformDSA.DSA.Models
             }
             return res;
         }
+        
         /// <summary>
-        /// 
+        /// Получение информации о сертификате
         /// </summary>
-        /// <param name="cert"></param>
-        /// <param name="base64StrCMS"></param>
-        /// <param name="userCertInfo"></param>
-        public void GetUserCertificate(string cert, string base64StrCMS,  UserCertInfo userCertInfo)
+        /// <param name="cms"></param>
+        /// <returns></returns>
+        public UserCertInfo GetInfo(byte[] cms)
         {
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_COMMONNAME, out userCertInfo.nameAndSurname);
-          
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_GIVENNAME, out userCertInfo.middleName);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_SURNAME, out userCertInfo.surname);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_SERIALNUMBER, out userCertInfo.IIN);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_EMAIL, out userCertInfo.email);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_NOTBEFORE, out userCertInfo.notBefore);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_NOTAFTER, out userCertInfo.notAfter);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_CERT_SN, out userCertInfo.serialNumberCert);
+            string outCert = "";
+           // UserCertInfo userCertInfo = new UserCertInfo();
+            UserCertInfo userCertInfo = null ;
+            Dictionary<string, int> userInfoList = new UserCertInfo().UserInfoList();
+            try
+            {
+                outCert = GetCertFromCms(cms);
+                userCertInfo = GetUserInfo(outCert, userInfoList);
+                userCertInfo.SignTime = GetTimeSignuture(cms);
 
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_COUNTRYNAME, out userCertInfo.issuerCountryName);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_SOPN, out userCertInfo.issuerSopn);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_LOCALITYNAME, out userCertInfo.issuerLocalityName);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_ORG_NAME, out userCertInfo.issuerOrgName);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_ORGUNIT_NAME, out userCertInfo.issuerOrgUnitName);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_COMMONNAME, out userCertInfo.issuerCommonName);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_COUNTRYNAME, out userCertInfo.subjectCountryName);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_SOPN, out userCertInfo.subjectSopn);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_LOCALITYNAME, out userCertInfo.subjectLocalityName);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_ORG_NAME, out userCertInfo.subjectOrgName);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_ORGUNIT_NAME, out userCertInfo.subjectOrgUnitName);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_BC, out userCertInfo.subjectBc);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_DC, out userCertInfo.subjectDc);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_KEY_USAGE, out userCertInfo.keyUsage);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return userCertInfo;
+        }
 
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_EXT_KEY_USAGE, out userCertInfo.extKeyUsage);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_AUTH_KEY_ID, out userCertInfo.authKeyId);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJ_KEY_ID, out userCertInfo.subjKeyId);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_CERT_SN, out userCertInfo.certSn);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_DN, out userCertInfo.issuerDn);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_DN, out userCertInfo.subjectDn);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SIGNATURE_ALG, out userCertInfo.signatureAlg);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_PUBKEY, out userCertInfo.pubkey);
-            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_POLICIES_ID, out userCertInfo.policiesId);
+        #endregion
 
-            _kalkan.TSAGetTimeFromSig(base64StrCMS, kalkanFlag, 0, out outDateTime);
+        #region private methods
+        private KeyValuePair<string, bool> ValidateSertificate_OCSP(string cert)
+        {
+            string errStr = "";
+            uint err;
+            string outInfo;
+            KeyValuePair<string, bool> keyValue = new KeyValuePair<string, bool>();
+            DateTime currentLocalTime = DateTime.Now;
+            _kalkan.X509ValidateCertificate(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_VALIDTYPE.KC_USE_OCSP, OCSP_PATH, currentLocalTime, out outInfo);
             _kalkan.GetLastErrorString(out errStr, out err);
             if (err == 0)
             {
-                userCertInfo.signTime = dateTime.AddSeconds(outDateTime).ToLocalTime();
-                userCertInfo.TSP_exists = new KeyValuePair<string, bool>("Успешно",true);
+                keyValue = err.SpecificCodeError(errStr, CENTER_DETERMINED_MESSAGE);
             }
             else
             {
-                userCertInfo.TSP_exists = new KeyValuePair<string, bool>("Не успешно", false);
+                keyValue = err.SpecificCodeError(errStr, null);
+            }
+            return keyValue;
+        }
+
+        private KeyValuePair<string, bool> ValidateSertificate_CRl(string cert)
+        {
+            string alg="";
+            string errStr = "";
+            uint err;
+            string outInfo;
+            KeyValuePair<string, bool> keyValue = new KeyValuePair<string, bool>();
+            string crlPathRSA = Path.Combine(Environment.CurrentDirectory, "nca_rsa.crl");
+            string crlPathGOST = Path.Combine(Environment.CurrentDirectory, "nca_gost.crl");
+            DateTime currentLocalTime = DateTime.Now;
+            // узнаем алгоритм шифрования
+            _kalkan.X509CertificateGetInfo(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SIGNATURE_ALG, out alg);
+            _kalkan.GetLastErrorString(out errStr, out err);
+            if (err != 0)
+            {
+                throw new Exception($"err: {err.ToString()} and discription errStr: {errStr}");
+            }
+            // на основе алгоритма шифрование выберем соответствующий crl файл
+            if (alg.Contains("RSA"))
+            {
+                _kalkan.X509ValidateCertificate(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_VALIDTYPE.KC_USE_CRL, crlPathRSA, currentLocalTime, out outInfo);
+                _kalkan.GetLastErrorString(out errStr, out err);
+                if (err != 0)
+                {
+                    keyValue = err.SpecificCodeError(errStr, null);
+                }
+                else if (err == 0)
+                {
+                    keyValue = err.SpecificCodeError(errStr, CENTER_DETERMINED_MESSAGE);
+                }
+            }
+            else if (alg.Contains("GOST"))
+            {
+                _kalkan.X509ValidateCertificate(cert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_VALIDTYPE.KC_USE_CRL, crlPathGOST, currentLocalTime, out outInfo);
+                _kalkan.GetLastErrorString(out errStr, out err);
+                if (err != 0)
+                {
+                    keyValue = err.SpecificCodeError(errStr, null);
+                }
+                else if (err == 0)
+                {
+                    keyValue = err.SpecificCodeError(errStr, CENTER_DETERMINED_MESSAGE);
+                }
+            }
+            else
+            {
+                throw new Exception($"Такого алгоритма шифрования как {alg} не существует");
+            }
+            return keyValue;
+        }
+
+        private DateTime GetTimeSignuture(byte[] cms)
+        {
+            string errStr;
+            uint err;
+            long outDateTime;
+            int kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS |
+                      (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_IN_BASE64 |
+                      (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_OUT_BASE64 |
+                      (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
+            string base64StrCms = Convert.ToBase64String(cms);
+
+            _kalkan.TSAGetTimeFromSig(base64StrCms, kalkanFlag, 0, out outDateTime);
+            _kalkan.GetLastErrorString(out errStr, out err);
+            if (err == 0)
+            {
+                return dateTime.AddSeconds(outDateTime).ToLocalTime();
+            }
+            else
+            {
+                throw new Exception($"err: {err.ToString()} and discription errStr: {errStr}");
             }
         }
 
+        private string GetCertFromCms(byte[] cms)
+        {
+            string outCert, errStr;
+            uint err;
+           int kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS |
+                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_IN_BASE64 |
+                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_OUT_BASE64 |
+                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
+            string base64StrCMS = Convert.ToBase64String(cms);
+            _kalkan.GetCertFromCMS(base64StrCMS, kalkanFlag, 1, out outCert);
+            _kalkan.GetLastErrorString(out errStr, out err);
+            if (err == 0)
+            {
+                return outCert;
+            }
+            else
+            {
+                throw new Exception($"err: {err.ToString()} and discription errStr: {errStr}");
+            }
+        }
+
+        private UserCertInfo GetUserInfo(string cert, Dictionary<string, int> userInfoList)
+        {
+            UserCertInfo userCertInfo = new UserCertInfo();
+            Type type = typeof(UserCertInfo);
+            string res;
+            try
+            {
+                foreach (var info in userInfoList)
+                {
+                    _kalkan.X509CertificateGetInfo(cert, info.Value, out res);
+                    PropertyInfo property = type.GetProperty(info.Key);
+                    property.SetValue(userCertInfo, res);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
+            return userCertInfo;
+        }
+
+        private bool SaveExtractedDataFromCMSToFile(string data)
+        {
+            bool res = false;
+            try
+            {
+                byte[] bytesFromBase64 = Convert.FromBase64String(data);
+                System.IO.File.WriteAllBytes(Path.Combine(Environment.CurrentDirectory, "sometext.txt"), bytesFromBase64);
+                res = true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+            return res;
+        }
+
+        #endregion
+
+
+
+
+
         public byte[] GetFile(byte[] cms)
-        {
-            throw new NotImplementedException();
-        }
-
-        public UserCertInfo GetAllInfo(byte[] cms)
-        {
-            throw new NotImplementedException();
-        }
-
-        public UserCertInfo GetInfo(byte[] cms)
         {
             throw new NotImplementedException();
         }
