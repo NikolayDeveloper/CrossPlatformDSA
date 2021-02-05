@@ -105,7 +105,7 @@ namespace CrossPlatformDSA.DSA.Models
             codeError = VerifyData("", kalkanFlag, ref dataRandom[0], dataRandom.Length, out base64Cms[0], base64Cms.Length,
                                     out outData[0], out outDataLen, out outVerifyInfo[0], out outVerifyInfoLen,
                                     inCertID, out outCert[0], out outCertLength);
-            KC_GetLastErrorString(ref errStr[0], ref bufSize);
+            codeError = KC_GetLastErrorString(ref errStr[0], ref bufSize);
             userCertInfo.ErrorExpiredOrInvalidWithoutKC_NOCHECKCERTTIME = codeError.SpecificCodeError(errStr.GetString(), "проверка успешная без флага KC_NOCHECKCERTTIME");
             codeErrorStr = codeError.ConvertToHexError();
             if(codeErrorStr == "0x08F00042")
@@ -115,7 +115,7 @@ namespace CrossPlatformDSA.DSA.Models
                 codeError = VerifyData("", kalkanFlag, ref dataRandom[0], dataRandom.Length, out base64Cms[0], base64Cms.Length,
                                      out outData[0], out outDataLen, out outVerifyInfo[0], out outVerifyInfoLen,
                                      inCertID, out outCert[0], out outCertLength);
-                KC_GetLastErrorString(ref errStr[0], ref bufSize);
+                codeError = KC_GetLastErrorString(ref errStr[0], ref bufSize);
 
                 userCertInfo.WarningExpiredOrInvalidWithKC_NOCHECKCERTTIME = codeError.SpecificCodeError(errStr.GetString(), null);
             }
@@ -194,7 +194,7 @@ namespace CrossPlatformDSA.DSA.Models
             long currentLocalUnixTime = DateTimeOffset.Now.ToUnixTimeSeconds();
             codeError = X509ValidateCertificate(ref cert[0], cert.Length, oCSPType, ref ocspPath[0], currentLocalUnixTime, out outInfo[0], out outInfoLength);
             int bufSize = MINLENTH;
-            KC_GetLastErrorString(ref errStr[0], ref bufSize);
+            codeError = KC_GetLastErrorString(ref errStr[0], ref bufSize);
             if (codeError == 0)
             {
                 keyValue = codeError.SpecificCodeError(errStr.GetString(), CENTER_DETERMINED_MESSAGE);
@@ -229,8 +229,8 @@ namespace CrossPlatformDSA.DSA.Models
             int bufSize = MINLENTH;
             // узнаем алгоритм шифрования
             codeError = X509CertificateGetInfo(ref cert[0], cert.Length, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SIGNATURE_ALG, out outAlg[0], ref outAlgLength);
-            
-            KC_GetLastErrorString(ref errStr[0], ref bufSize);
+
+            codeError = KC_GetLastErrorString(ref errStr[0], ref bufSize);
 
             if (codeError != 0)
             {
@@ -242,7 +242,7 @@ namespace CrossPlatformDSA.DSA.Models
             {
                 codeError = X509ValidateCertificate(ref cert[0], cert.Length, cRLPType, ref crlPathRSA[0], currentLocalUnixTime, out outInfo[0], out outInfoLength);
                 bufSize = MINLENTH;
-                KC_GetLastErrorString(ref errStr[0], ref bufSize);
+                codeError = KC_GetLastErrorString(ref errStr[0], ref bufSize);
                 if (codeError == 0)
                 {
                     keyValue = codeError.SpecificCodeError(errStr.GetString(), CENTER_DETERMINED_MESSAGE);
@@ -257,7 +257,7 @@ namespace CrossPlatformDSA.DSA.Models
                 outInfoLength = MINLENTH;
                 codeError = X509ValidateCertificate(ref cert[0], cert.Length, cRLPType, ref crlPathGOST[0], currentLocalUnixTime, out outInfo[0], out outInfoLength);
                 bufSize = MINLENTH;
-                KC_GetLastErrorString(ref errStr[0], ref bufSize);
+                codeError = KC_GetLastErrorString(ref errStr[0], ref bufSize);
                 if (codeError == 0)
                 {
                     keyValue = codeError.SpecificCodeError(errStr.GetString(), CENTER_DETERMINED_MESSAGE);
@@ -289,7 +289,7 @@ namespace CrossPlatformDSA.DSA.Models
                   (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
 
             codeError = KC_GetTimeFromSig(ref base64Cms[0], base64Cms.Length, kalkanFlag, 0, out outDateTime);
-            KC_GetLastErrorString(ref errStr[0], ref bufSize);
+            codeError = KC_GetLastErrorString(ref errStr[0], ref bufSize);
             if (codeError == 0)
             {
                 return dateTime.AddSeconds(outDateTime).ToLocalTime();
@@ -317,7 +317,7 @@ namespace CrossPlatformDSA.DSA.Models
                   (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
 
             codeError = KC_GetTimeFromSig(ref base64Cms[0], base64Cms.Length, kalkanFlag, 0, out outDateTime);
-            KC_GetLastErrorString(ref errStr[0], ref bufSize);
+            codeError = KC_GetLastErrorString(ref errStr[0], ref bufSize);
             if (codeError == 0)
             {
                 keyValue = new KeyValuePair<string, bool>("Успешно", true);
@@ -343,7 +343,9 @@ namespace CrossPlatformDSA.DSA.Models
                    (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
             byte[] errStr = new byte[MINLENTH];
             ulong codeError;
+            int bufSize = MINLENTH;
             codeError = KC_GetCertFromCMS(ref base64Cms[0], base64Cms.Length, 1, kalkanFlag, out outCert[0], out outCertLength);
+            codeError = KC_GetLastErrorString(ref errStr[0], ref bufSize);
             if (codeError == 0)
             {
                 return Encoding.UTF8.GetString(outCert, 0, outCertLength);
@@ -395,29 +397,7 @@ namespace CrossPlatformDSA.DSA.Models
             }
             return res;
         }
-
-
-
-        //private KeyValuePair<string,string> GetUserInfo(byte[] cert,int certPropIdFlag)
-        //{
-        //    outDataInfoLength = LENGTH;
-        //    KeyValuePair<string, string> res=new KeyValuePair<string, string>("default", "default");
-        //    ulong isSuccess = X509CertificateGetInfo(ref cert[0], cert.Length, certPropIdFlag, out outDataInfo[0], ref outDataInfoLength);
-        //    if(isSuccess==0)
-        //    {
-        //        if(!string.IsNullOrEmpty(Encoding.UTF8.GetString(outDataInfo)))
-        //        {
-        //            //TODO parse string outDataInfo to key and value
-        //            res = new KeyValuePair<string, string>("key", Encoding.UTF8.GetString(outDataInfo, 0, outDataInfoLength - 1));
-        //        }
-        //    }
-        //    else
-        //    {
-        //        res = new KeyValuePair<string, string>("error","Error: " + isSuccess.ConvertToHexError());
-        //    }
-        //    return res;
-        //}
-
+        
         #endregion
 
 
@@ -426,94 +406,5 @@ namespace CrossPlatformDSA.DSA.Models
         {
             throw new NotImplementedException();
         }
-
-        //public string ValidateSertificate(byte[] outCert)
-        //{
-        //    byte[] errStr = new byte[LENGTH];
-        //    ulong codeError;
-        //    byte[] outInfo = new byte[LENGTH];
-        //    byte[] ocspPath = new byte[LENGTH];
-        //    int outInfoLength = LENGTH;
-        //    ocspPath = System.Text.Encoding.UTF8.GetBytes(OCSP_PATH);
-        //    long currentLocalUnixTime = DateTimeOffset.Now.ToUnixTimeSeconds();
-        //    codeError = X509ValidateCertificate(ref outCert[0], outCert.Length, oCSPType, ref ocspPath[0], currentLocalUnixTime, out outInfo[0], out outInfoLength);
-        //    if(codeError!=0)
-        //    {
-        //        bufSize = 1000;
-        //        KC_GetLastErrorString(ref errStr[0], ref bufSize);
-        //        throw new Exception("Ошибка в методе VerifyData,код ошибки: " + codeError.ConvertToHexError(),
-        //                            new Exception(Encoding.UTF8.GetString(errStr)));
-        //    }
-
-        //    return Encoding.UTF8.GetString(outInfo,0, outInfoLength - 1);
-        //}
-
-        //public UserCertInfo GetAllInfo(byte[] cms)
-        //{
-        //    long unixTimeSignuture;
-        //    string certStr = "";
-        //    byte[] outCert = new byte[LENGTH];
-
-        //    try
-        //    {
-        //      certStr = GetCertFromCms(cms);
-        //      outCert = Encoding.UTF8.GetBytes(certStr);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        throw new Exception(ex.Message + " InnerExeption: " + ex.InnerException);
-        //    }
-
-
-        //    UserCertInfo userCertInfo = new UserCertInfo();
-        //    userCertInfo.nameAndSurname = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_COMMONNAME).Value;
-        //    userCertInfo.middleName = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_GIVENNAME).Value;
-        //    userCertInfo.issuerCountryName = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_COUNTRYNAME).Value;
-        //    userCertInfo.issuerSopn = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_SOPN).Value;
-        //    userCertInfo.issuerLocalityName = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_LOCALITYNAME).Value;
-        //    userCertInfo.issuerOrgName = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_ORG_NAME).Value;
-        //    userCertInfo.issuerOrgUnitName = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_ORGUNIT_NAME).Value;
-        //    userCertInfo.issuerCommonName = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_COMMONNAME).Value;
-        //    userCertInfo.subjectCountryName = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_COUNTRYNAME).Value;
-        //    userCertInfo.subjectSopn = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_SOPN).Value;
-        //    userCertInfo.subjectLocalityName = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_LOCALITYNAME).Value;
-        //    userCertInfo.surname = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_SURNAME).Value;
-        //    userCertInfo.serialNumberCert = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_SERIALNUMBER).Value;
-        //    userCertInfo.email = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_EMAIL).Value;
-        //    userCertInfo.subjectOrgName = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_ORG_NAME).Value;
-        //    userCertInfo.subjectOrgUnitName = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_ORGUNIT_NAME).Value;
-        //    userCertInfo.subjectBc = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_BC).Value;
-        //    userCertInfo.subjectDc = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_DC).Value;
-        //    userCertInfo.notBefore = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_NOTBEFORE).Value;
-        //    userCertInfo.notAfter = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_NOTAFTER).Value;
-        //    userCertInfo.keyUsage = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_KEY_USAGE).Value;
-        //    userCertInfo.extKeyUsage = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_EXT_KEY_USAGE).Value;
-        //    userCertInfo.authKeyId = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_AUTH_KEY_ID).Value;
-        //    userCertInfo.subjKeyId = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJ_KEY_ID).Value;
-        //    userCertInfo.certSn = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_CERT_SN).Value;
-        //    userCertInfo.issuerDn = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_ISSUER_DN).Value;
-        //    userCertInfo.subjectDn = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SUBJECT_DN).Value;
-        //    userCertInfo.signatureAlg = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SIGNATURE_ALG).Value;
-        //    userCertInfo.pubkey = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_PUBKEY).Value;
-        //    userCertInfo.policiesId = GetUserInfo(outCert, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_POLICIES_ID).Value;
-
-        //    unixTimeSignuture = GetTimeSignuture(cms);
-        //    userCertInfo.signTime = dateTime.AddSeconds(unixTimeSignuture).ToLocalTime();
-
-
-        //    return userCertInfo;
-        //}
-
-
-
-
-
-
-
-
-        //public UserCertInfo GetInfo(byte[] cms)
-        //{
-        //    throw new NotImplementedException();
-        //}
     }
 }
