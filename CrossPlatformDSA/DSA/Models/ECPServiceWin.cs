@@ -47,7 +47,10 @@ namespace CrossPlatformDSA.DSA.Models
                    (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_IN_BASE64 |
                    (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_OUT_BASE64 |
                    (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
-            // используем этот метод первым, чтобы вытащить сертификат
+            
+            // Проверяем отметку времени
+             userCertInfo.TSP_exists = ValidateTimeSignuture(cms);
+            // вытаскиваем сертификат для дальнейшей работы
             _kalkan.VerifyData("", kalkanFlag, 1, "", base64StrCMS, out outData, out outVerifyInfo, out outCert);
             _kalkan.GetLastErrorString(out errStr, out err);
             userCertInfo.ErrorExpiredOrInvalidWithoutKC_NOCHECKCERTTIME = err.SpecificCodeError(errStr, "проверка успешная без флага KC_NOCHECKCERTTIME");
@@ -112,7 +115,6 @@ namespace CrossPlatformDSA.DSA.Models
                 outCert = GetCertFromCms(cms);
                 userCertInfo = GetUserInfo(outCert, userInfoList);
                 userCertInfo.SignTime = GetTimeSignuture(cms);
-
             }
             catch (Exception ex)
             {
@@ -159,7 +161,7 @@ namespace CrossPlatformDSA.DSA.Models
             _kalkan.GetLastErrorString(out errStr, out err);
             if (err != 0)
             {
-                throw new Exception($"err: {err.ToString()} and discription errStr: {errStr}");
+                throw new Exception($"err: {err.ConvertToHexErrorUint()} and discription errStr: {errStr}");
             }
             // на основе алгоритма шифрование выберем соответствующий crl файл
             if (alg.Contains("RSA"))
@@ -214,7 +216,35 @@ namespace CrossPlatformDSA.DSA.Models
             }
             else
             {
-                throw new Exception($"err: {err.ToString()} and discription errStr: {errStr}");
+                return new DateTime();
+                //throw new Exception($"err: {err.ConvertToHexErrorUint()} and discription errStr: {errStr}");
+            }
+        }
+
+        private KeyValuePair<string, bool> ValidateTimeSignuture(byte[] cms)
+        {
+            KeyValuePair<string, bool> keyValue = new KeyValuePair<string, bool>(null, false);
+            string errStr;
+            uint err;
+            long outDateTime;
+            int kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS |
+                      (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_IN_BASE64 |
+                      (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_OUT_BASE64 |
+                      (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
+            string base64StrCms = Convert.ToBase64String(cms);
+
+            _kalkan.TSAGetTimeFromSig(base64StrCms, kalkanFlag, 0, out outDateTime);
+            _kalkan.GetLastErrorString(out errStr, out err);
+            if (err == 0)
+            {
+               keyValue = new KeyValuePair<string, bool>("Успешно", true);
+               return keyValue;
+            }
+            else
+            {
+                keyValue = new KeyValuePair<string, bool>("Не успешно", false);
+                return keyValue;
+                //throw new Exception($"err: {err.ConvertToHexErrorUint()} and discription errStr: {errStr}");
             }
         }
 
@@ -235,7 +265,7 @@ namespace CrossPlatformDSA.DSA.Models
             }
             else
             {
-                throw new Exception($"err: {err.ToString()} and discription errStr: {errStr}");
+                throw new Exception($"err: {err.ConvertToHexErrorUint()} and discription errStr: {errStr}");
             }
         }
 

@@ -57,6 +57,9 @@ namespace CrossPlatformDSA.DSA.Models
         [DllImport(LIB_NAME, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern ulong KC_GetLastErrorString(ref byte errorString, ref int bufSize);
 
+        [DllImport(LIB_NAME, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern ulong KC_GetLastError();
+
         [DllImport(LIB_NAME, CallingConvention = CallingConvention.StdCall)]
         public static extern ulong VerifyData(string alias, int flags, ref byte inData, int inDataLength, out byte inoutSign, int inoutSignLength,
                                                 out byte outData, out int outDataLen, out byte outVerifyInfo, out int outVerifyInfoLen,
@@ -76,11 +79,12 @@ namespace CrossPlatformDSA.DSA.Models
         #region public methods
         public bool VerifyData(byte[] cms, UserCertInfo userCertInfo)
         {
-            userCertInfo = null;
+            string base64Str = Convert.ToBase64String(cms);
+            byte[] base64Cms = Encoding.UTF8.GetBytes(base64Str);
             ulong codeError;
             byte[] errStr = new byte[MINLENTH];
             byte[] outCert = new byte[LENGTH];
-            byte[] outData = new byte[cms.Length];
+            byte[] outData = new byte[base64Cms.Length];
             byte[] outVerifyInfo = new byte[MINLENTH];
             int outCertLength = LENGTH;
             int outDataLen = outData.Length;
@@ -91,31 +95,33 @@ namespace CrossPlatformDSA.DSA.Models
             int kalkanFlag; //= 2322;
             string codeErrorStr;
             int bufSize = MINLENTH;
-            kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS +
-                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_IN_BASE64 +
-                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_OUT_BASE64 + 
+            kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS |
+                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_IN_BASE64 |
+                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_OUT_BASE64 | 
                   (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
-            
-            codeError = VerifyData("", kalkanFlag, ref dataRandom[0], dataRandom.Length, out cms[0], cms.Length,
+            // Проверяем отметку времени
+            userCertInfo.TSP_exists = ValidateTimeSignuture(cms);
+            // вытаскиваем сертификат для дальнейшей работы
+            codeError = VerifyData("", kalkanFlag, ref dataRandom[0], dataRandom.Length, out base64Cms[0], base64Cms.Length,
                                     out outData[0], out outDataLen, out outVerifyInfo[0], out outVerifyInfoLen,
                                     inCertID, out outCert[0], out outCertLength);
             KC_GetLastErrorString(ref errStr[0], ref bufSize);
-            userCertInfo.ErrorExpiredOrInvalidWithoutKC_NOCHECKCERTTIME = codeError.SpecificCodeError(Encoding.UTF8.GetString(errStr), "проверка успешная без флага KC_NOCHECKCERTTIME");
+            userCertInfo.ErrorExpiredOrInvalidWithoutKC_NOCHECKCERTTIME = codeError.SpecificCodeError(errStr.GetString(), "проверка успешная без флага KC_NOCHECKCERTTIME");
             codeErrorStr = codeError.ConvertToHexError();
             if(codeErrorStr == "0x08F00042")
             {
                 bufSize = MINLENTH;
                 kalkanFlag |= (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_NOCHECKCERTTIME;
-                codeError = VerifyData("", kalkanFlag, ref dataRandom[0], dataRandom.Length, out cms[0], cms.Length,
+                codeError = VerifyData("", kalkanFlag, ref dataRandom[0], dataRandom.Length, out base64Cms[0], base64Cms.Length,
                                      out outData[0], out outDataLen, out outVerifyInfo[0], out outVerifyInfoLen,
                                      inCertID, out outCert[0], out outCertLength);
                 KC_GetLastErrorString(ref errStr[0], ref bufSize);
 
-                userCertInfo.WarningExpiredOrInvalidWithKC_NOCHECKCERTTIME = codeError.SpecificCodeError(Encoding.UTF8.GetString(errStr), null);
+                userCertInfo.WarningExpiredOrInvalidWithKC_NOCHECKCERTTIME = codeError.SpecificCodeError(errStr.GetString(), null);
             }
             if (codeError == 0)
             {
-                userCertInfo.CMSvalidateMessage = codeError.SpecificCodeError(Encoding.UTF8.GetString(errStr), "Цифровая подпись прошла проверку");
+                userCertInfo.CMSvalidateMessage = codeError.SpecificCodeError(errStr.GetString(), "Цифровая подпись прошла проверку");
 
                 try
                 {
@@ -138,7 +144,7 @@ namespace CrossPlatformDSA.DSA.Models
                 }
                 catch (Exception ex)
                 {
-                    userCertInfo.ExtraInfo = ex.Message + ": errStr: " + errStr;
+                    userCertInfo.ExtraInfo = ex.Message + ": errStr: " + errStr.GetString();
                 }
             }
             else
@@ -228,7 +234,7 @@ namespace CrossPlatformDSA.DSA.Models
 
             if (codeError != 0)
             {
-                throw new Exception($"err: {codeError.ToString()} and discription errStr: {errStr.GetString()}");
+                throw new Exception($"err: {codeError.ConvertToHexError()} and discription errStr: {errStr.GetString()}");
             }
             // на основе алгоритма шифрование выберем соответствующий crl файл
             alg = Encoding.UTF8.GetString(outAlg, 0, outAlgLength - 1);
@@ -270,17 +276,19 @@ namespace CrossPlatformDSA.DSA.Models
 
         private DateTime GetTimeSignuture(byte[] cms)
         {
+            string base64Str = Convert.ToBase64String(cms);
+            byte[] base64Cms = Encoding.UTF8.GetBytes(base64Str);
             byte[] errStr = new byte[MINLENTH];
             long outDateTime;
             ulong codeError;
             int kalkanFlag; //= 2322;
             int bufSize = MINLENTH;
-            kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS +
-                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_IN_BASE64 +
-                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_OUT_BASE64 +
+            kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS |
+                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_IN_BASE64 |
+                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_OUT_BASE64 |
                   (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
 
-            codeError = KC_GetTimeFromSig(ref cms[0], cms.Length, kalkanFlag, 0, out outDateTime);
+            codeError = KC_GetTimeFromSig(ref base64Cms[0], base64Cms.Length, kalkanFlag, 0, out outDateTime);
             KC_GetLastErrorString(ref errStr[0], ref bufSize);
             if (codeError == 0)
             {
@@ -288,12 +296,45 @@ namespace CrossPlatformDSA.DSA.Models
             }
             else
             {
-                throw new Exception($"err: {codeError.ToString()} and discription errStr: {errStr.GetString()}");
+                return new DateTime();
+                // throw new Exception($"err: {codeError.ConvertToHexError()} and discription errStr: {errStr.GetString()}");
+            }
+        }
+
+        private KeyValuePair<string, bool> ValidateTimeSignuture(byte[] cms)
+        {
+            KeyValuePair<string, bool> keyValue = new KeyValuePair<string, bool>(null, false);
+            string base64Str = Convert.ToBase64String(cms);
+            byte[] base64Cms = Encoding.UTF8.GetBytes(base64Str);
+            byte[] errStr = new byte[MINLENTH];
+            long outDateTime;
+            ulong codeError;
+            int kalkanFlag; //= 2322;
+            int bufSize = MINLENTH;
+            kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS |
+                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_IN_BASE64 |
+                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_OUT_BASE64 |
+                  (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
+
+            codeError = KC_GetTimeFromSig(ref base64Cms[0], base64Cms.Length, kalkanFlag, 0, out outDateTime);
+            KC_GetLastErrorString(ref errStr[0], ref bufSize);
+            if (codeError == 0)
+            {
+                keyValue = new KeyValuePair<string, bool>("Успешно", true);
+                return keyValue;
+            }
+            else
+            {
+                keyValue = new KeyValuePair<string, bool>("Не успешно", false);
+                return keyValue;
+                // throw new Exception($"err: {codeError.ConvertToHexError()} and discription errStr: {errStr.GetString()}");
             }
         }
 
         private string GetCertFromCms(byte[] cms)
         {
+            string base64Str = Convert.ToBase64String(cms);
+            byte[] base64Cms = Encoding.UTF8.GetBytes(base64Str);
             byte[] outCert = new byte[LENGTH];
             int outCertLength = LENGTH;
             int kalkanFlag = (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_SIGN_CMS |
@@ -302,14 +343,14 @@ namespace CrossPlatformDSA.DSA.Models
                    (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
             byte[] errStr = new byte[MINLENTH];
             ulong codeError;
-            codeError = KC_GetCertFromCMS(ref cms[0], cms.Length, 1, kalkanFlag, out outCert[0], out outCertLength);
+            codeError = KC_GetCertFromCMS(ref base64Cms[0], base64Cms.Length, 1, kalkanFlag, out outCert[0], out outCertLength);
             if (codeError == 0)
             {
-                return Encoding.UTF8.GetString(outCert, 0, outCertLength - 1);
+                return Encoding.UTF8.GetString(outCert, 0, outCertLength);
             }
             else
             {
-                throw new Exception($"err: {codeError.ToString()} and discription errStr: {errStr.GetString()}");
+                throw new Exception($"err: {codeError.ConvertToHexError()} and discription errStr: {errStr.GetString()}");
             }
         }
 
@@ -326,7 +367,7 @@ namespace CrossPlatformDSA.DSA.Models
                 foreach (var info in userInfoList)
                 {
                     codeError = X509CertificateGetInfo(ref cert[0], cert.Length, info.Value, out outData[0], ref outDataLength);
-                    res = Encoding.UTF8.GetString(outData, 0, outDataLength - 1);
+                    res = Encoding.UTF8.GetString(outData, 0, outDataLength);
                     PropertyInfo property = type.GetProperty(info.Key);
                     property.SetValue(userCertInfo, res);
                 }
@@ -344,7 +385,7 @@ namespace CrossPlatformDSA.DSA.Models
             bool res = false;
             try
             {
-                byte[] bytesFromBase64 = Convert.FromBase64String(data.GetString());
+                byte[] bytesFromBase64 = Convert.FromBase64String(Encoding.UTF8.GetString(data));
                 System.IO.File.WriteAllBytes(System.IO.Path.Combine(Environment.CurrentDirectory, "sometext.txt"), bytesFromBase64);
                 res = true;
             }
