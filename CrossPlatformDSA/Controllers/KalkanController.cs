@@ -35,7 +35,13 @@ namespace CrossPlatformDSA.Controllers
             }
             try
             {
-                userCertInfo = _espService.GetInfo(cms);
+                // здесь просто получим подписанные данные из cms
+                //byte[] data =  _espService.GetFile(cms);
+                
+                // здесь получим информацию о сертификате из cms
+                 userCertInfo = _espService.GetInfo(cms);
+                
+                // здесь проверим подпись на целостность, отозванность, просроченность
                 if (_espService.VerifyData(cms, userCertInfo))
                 {
                     ViewBag.Message = "Проверка прошла успешно";

@@ -7,11 +7,15 @@ using CrossPlatformDSA.DSA.Interfaces;
 using CrossPlatformDSA.DSA.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using WTO.Classes.Infrastructure.Services.Logger.Abstract;
+using WTO.Classes.Infrastructure.Services.Logger.Implementations;
 
 namespace CrossPlatformDSA
 {
@@ -37,7 +41,9 @@ namespace CrossPlatformDSA
             {
                 services.AddSingleton<IECPService, ECPServiceLinux>();
             }
-
+            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.Configure<LoggerSettings>(Configuration.GetSection("LoggerSettings"));
+            services.AddSingleton<IAppLog, AppLog>();
 
             services.AddControllersWithViews();
         }
