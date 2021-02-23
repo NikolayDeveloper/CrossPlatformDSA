@@ -222,12 +222,14 @@ namespace CrossPlatformDSA.DSA.Models
                 {
                     if (!string.IsNullOrEmpty(Encoding.UTF8.GetString(outCert)))
                     {
+                       byte [] cert = Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(outCert, 0, outCertLength));
+                        
                         // Проверка сертификата на отозванность на основе удостоверяющего центра OCSP
-                        userCertInfo.validCertificateMessage_ocsp = ValidateSertificate_OCSP(outCert);
+                        userCertInfo.validCertificateMessage_ocsp = ValidateSertificate_OCSP(cert);
                         // Проверка сертификата на отозванность на основе скачаного файла crl в котором находится список отозванных сертификатов из pki.gov.kz 
                         // Срок годности crl файла 1 день. Если мы хотим пользоваться crl нам нужно каждый день скачивать из https://pki.gov.kz/ новый crl файл, иначе он будет считаться истекшим
                         // ошибка будет такого рода crl expired
-                        userCertInfo.validCertificateMessage_crl = ValidateSertificate_CRl(outCert);
+                        userCertInfo.validCertificateMessage_crl = ValidateSertificate_CRl(cert);
                         res = true;
                     }
                     else
@@ -508,8 +510,8 @@ namespace CrossPlatformDSA.DSA.Models
                     _appLog.WriteLog("X509CertificateGetInfo output::: "+ 
                         "||KALKANCRYPTCOM_CERTPROPID - " + info.Value.ToString() +
                         "||outData - " + outData.GetString());
-                    //  res = Encoding.UTF8.GetString(outData, 0, outDataLength);
-                    res = Encoding.UTF8.GetString(outData);
+                      res = Encoding.UTF8.GetString(outData, 0, outDataLength);
+                   // res = Encoding.UTF8.GetString(outData);
                     PropertyInfo property = type.GetProperty(info.Key);
                     property.SetValue(userCertInfo, res);
                 }
