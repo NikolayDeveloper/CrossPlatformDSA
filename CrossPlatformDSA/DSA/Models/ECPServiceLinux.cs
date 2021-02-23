@@ -13,7 +13,9 @@ namespace CrossPlatformDSA.DSA.Models
 {
     public class ECPServiceLinux : IECPService
     {
-        public ECPServiceLinux(IAppLog appLog)
+        private IAppLog _appLog;
+        public ECPServiceLinux(IAppLog appLog
+            )
         {
             _appLog = appLog;
             Init();
@@ -37,7 +39,7 @@ namespace CrossPlatformDSA.DSA.Models
        // ocspPath = new byte[LENGTH],
        // outInfo = new byte[LENGTH];
         int inCertID = 1;
-        private IAppLog _appLog;
+       
 
         //int bufSize = 10000;
 

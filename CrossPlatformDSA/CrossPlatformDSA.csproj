@@ -13,10 +13,13 @@
       <HintPath>Lib\Interop.KalkanCryptCOMLib.dll</HintPath>
     </Reference>
     <Reference Include="WTO.Classes.Application">
-      <HintPath>..\WTO.Classes\WTO.Classes.Application\bin\Debug\netstandard2.0\WTO.Classes.Application.dll</HintPath>
+      <HintPath>..\..\WTO.Classes\WTO.Classes.Infrastructure\bin\Debug\netcoreapp3.1\WTO.Classes.Application.dll</HintPath>
+    </Reference>
+    <Reference Include="WTO.Classes.Domain">
+      <HintPath>..\..\WTO.Classes\WTO.Classes.Infrastructure\bin\Debug\netcoreapp3.1\WTO.Classes.Domain.dll</HintPath>
     </Reference>
     <Reference Include="WTO.Classes.Infrastructure">
-      <HintPath>..\WTO.Classes\WTO.Classes.Infrastructure\bin\Debug\netcoreapp3.1\WTO.Classes.Infrastructure.dll</HintPath>
+      <HintPath>..\..\WTO.Classes\WTO.Classes.Infrastructure\bin\Debug\netcoreapp3.1\WTO.Classes.Infrastructure.dll</HintPath>
     </Reference>
   </ItemGroup>
 

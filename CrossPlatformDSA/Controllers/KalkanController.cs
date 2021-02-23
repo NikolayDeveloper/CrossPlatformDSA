@@ -36,20 +36,20 @@ namespace CrossPlatformDSA.Controllers
             try
             {
                 // здесь просто получим подписанные данные из cms
-                //byte[] data =  _espService.GetFile(cms);
+                byte[] data =  _espService.GetFile(cms);
                 
                 // здесь получим информацию о сертификате из cms
-                 userCertInfo = _espService.GetInfo(cms);
-                
+                //userCertInfo = _espService.GetInfo(cms);
+
                 // здесь проверим подпись на целостность, отозванность, просроченность
-                if (_espService.VerifyData(cms, userCertInfo))
-                {
-                    ViewBag.Message = "Проверка прошла успешно";
-                }
-                else
-                {
-                    ViewBag.Message = "Проверка не прошла успешно";
-                }
+                //if (_espService.VerifyData(cms, userCertInfo))
+                //{
+                //    ViewBag.Message = "Проверка прошла успешно";
+                //}
+                //else
+                //{
+                //    ViewBag.Message = "Проверка не прошла успешно";
+                //}
 
 
             }
