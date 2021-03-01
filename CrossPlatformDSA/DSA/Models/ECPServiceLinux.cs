@@ -14,8 +14,7 @@ namespace CrossPlatformDSA.DSA.Models
     public class ECPServiceLinux : IECPService
     {
         private IAppLog _appLog;
-        public ECPServiceLinux(IAppLog appLog
-            )
+        public ECPServiceLinux(IAppLog appLog)
         {
             _appLog = appLog;
             Init();
@@ -288,6 +287,11 @@ namespace CrossPlatformDSA.DSA.Models
             ocspPath = System.Text.Encoding.UTF8.GetBytes(OCSP_PATH);
             long currentLocalUnixTime = DateTimeOffset.Now.ToUnixTimeSeconds();
             int bufSize = MINLENTH;
+
+            // Clean byte[] cert from empty bytes(0)
+            var certString = cert.GetString2();
+            cert = certString.GetBytes();
+
             codeError = X509ValidateCertificate(ref cert[0], cert.Length, oCSPType, ref ocspPath[0], currentLocalUnixTime, out outInfo[0], out outInfoLength);
             KC_GetLastErrorString(ref errStr[0], ref bufSize);
             _appLog.WriteLog("X509ValidateCertificate Output::: " +
@@ -328,6 +332,11 @@ namespace CrossPlatformDSA.DSA.Models
             crlPathGOST = Encoding.UTF8.GetBytes(pathGOST);
             long currentLocalUnixTime = DateTimeOffset.Now.ToUnixTimeSeconds();
             int bufSize = MINLENTH;
+
+            // Clean byte[] cert from empty bytes(0)
+            var certString = cert.GetString2();
+            cert = certString.GetBytes();
+
             // узнаем алгоритм шифрования
             codeError = X509CertificateGetInfo(ref cert[0], cert.Length, (int)KalkanCryptCOMLib.KALKANCRYPTCOM_CERTPROPID.KC_CERTPROP_SIGNATURE_ALG, out outAlg[0], ref outAlgLength);
             KC_GetLastErrorString(ref errStr[0], ref bufSize);
@@ -344,17 +353,17 @@ namespace CrossPlatformDSA.DSA.Models
                 codeError = X509ValidateCertificate(ref cert[0], cert.Length, cRLPType, ref crlPathRSA[0], currentLocalUnixTime, out outInfo[0], out outInfoLength);
                 KC_GetLastErrorString(ref errStr[0], ref bufSize);
                 _appLog.WriteLog("X509ValidateCertificate Output::: " +
-               "||crlPathRSA - " + crlPathRSA.GetString() +
+               "||crlPathRSA - " + crlPathRSA.GetString2() +
                "||codeError - " + codeError.ConvertToHexError() +
-               "||errStr - " + errStr.GetString() +
-               "||outInfo - " + outInfo.GetString());
+               "||errStr - " + errStr.GetString2() +
+               "||outInfo - " + outInfo.GetString2());
                 if (codeError == 0)
                 {
-                    keyValue = codeError.SpecificCodeError(errStr.GetString(), CENTER_DETERMINED_MESSAGE);
+                    keyValue = codeError.SpecificCodeError(errStr.GetString2(), CENTER_DETERMINED_MESSAGE);
                 }
                 else
                 {
-                    keyValue = codeError.SpecificCodeError(errStr.GetString(), null);
+                    keyValue = codeError.SpecificCodeError(errStr.GetString2(), null);
                 }
             }
             else if (alg.Contains("GOST"))
@@ -509,7 +518,8 @@ namespace CrossPlatformDSA.DSA.Models
                         "||KALKANCRYPTCOM_CERTPROPID - " + info.Value.ToString() +
                         "||outData - " + outData.GetString());
                     //  res = Encoding.UTF8.GetString(outData, 0, outDataLength);
-                    res = Encoding.UTF8.GetString(outData);
+                    //res = Encoding.UTF8.GetString(outData);
+                    res = outData.GetString2();
                     PropertyInfo property = type.GetProperty(info.Key);
                     property.SetValue(userCertInfo, res);
                 }
@@ -527,7 +537,8 @@ namespace CrossPlatformDSA.DSA.Models
             bool res = false;
             try
             {
-                byte[] bytesFromBase64 = Convert.FromBase64String(Encoding.UTF8.GetString(data));
+                //byte[] bytesFromBase64 = Convert.FromBase64String(Encoding.UTF8.GetString(data));
+                byte[] bytesFromBase64 = Convert.FromBase64String(data.GetString2());
                 System.IO.File.WriteAllBytes(System.IO.Path.Combine(Environment.CurrentDirectory, "sometext.txt"), bytesFromBase64);
                 res = true;
             }

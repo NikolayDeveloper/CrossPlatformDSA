@@ -148,5 +148,27 @@ namespace CrossPlatformDSA
             result = stringBuilder.ToString();
             return result;
         }
+
+        public static string GetString2(this byte[] arr)
+        {
+            StringBuilder stringBuilder = new StringBuilder(200);
+            string result = "";
+
+            char[] charArray = Encoding.UTF8.GetChars(arr);
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                if (charArray[i] != '\0')
+                {
+                    stringBuilder.Append(charArray[i]);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            result = stringBuilder.ToString();
+            return result;
+        }
     }
 }
