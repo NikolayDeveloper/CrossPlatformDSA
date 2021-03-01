@@ -5,3 +5,4 @@ bin/
 LogDir/
 *.user
 packages/
+.vscode/

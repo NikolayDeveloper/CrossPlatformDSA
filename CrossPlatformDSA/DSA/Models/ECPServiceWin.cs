@@ -23,8 +23,7 @@ namespace CrossPlatformDSA.DSA.Models
         //uint err;
         DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc); // Время в формате unix систем
 
-        public ECPServiceWin(IAppLog appLog
-            )
+        public ECPServiceWin(IAppLog appLog)
         {
             _appLog = appLog;
             _kalkan = new KalkanCryptCOMLib.KalkanCryptCOM();

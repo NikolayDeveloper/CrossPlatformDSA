@@ -44,11 +44,11 @@ namespace CrossPlatformDSA.Controllers
                 // здесь проверим подпись на целостность, отозванность, просроченность
                 if (_espService.VerifyData(cms, userCertInfo))
                 {
-                    ViewBag.Message = "Проверка прошла успешно";
+                   ViewBag.Message = "Проверка прошла успешно";
                 }
                 else
                 {
-                    ViewBag.Message = "Проверка не прошла успешно";
+                   ViewBag.Message = "Проверка не прошла успешно";
                 }
 
 
