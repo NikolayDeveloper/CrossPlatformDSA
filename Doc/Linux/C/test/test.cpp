@@ -30,8 +30,7 @@ int main() {
 
 	lib_funcList = (KC_GetFunctionList1)dlsym(handle, "KC_GetFunctionList");
 	lib_funcList(&kc_funcs);
-	void (*KC_DebugD)(const char*, int, unsigned long);
-	*(void **) (&KC_DebugD) = dlsym(handle, "KCC_DebugD");
+
 	rv = kc_funcs->KC_Init();
 
 	const char* alias = "";
@@ -71,7 +70,7 @@ int main() {
 		
 			if (NumberStorage == 1)
 			{
-				container 							= "/home/user/Desktop/Temp/GOSTKNCA.p12";
+				container 							= "/home/user/Temp/GOSTKNCA.p12";
 				password = "Qwerty12";
 				storage = KCST_PKCS12;
 				
@@ -168,7 +167,18 @@ int main() {
 		}
 	
 
-		printf(" Показать сертификат - 1 \tИнформация о сертификате - 2 \n Подписать данные - 3 \t\tПроверить данные - 4 \n Хэшировать данные - 5 \t\tПодписать хэш-данные - 6 \n Подписать XML - 7 \t\tПроверить XML - 8 \n Подписать WSSE - 9 \t\tПроверить WSSE - 10 \n Получить сертификат из CMS -11\tПолучить сертификат из XML - 12 \n Получить время подписи - 13 \tПроверка сертификата - 14 \n Подписать файл - 15   \t\tПодпись/Проверка множественной подписи - 16 \n Подписать архив - 17 \t\tПроверить подписанный архив - 18\n Выход - 0\t\t\tСмена хранилища сертификатов - 100\n\n");
+		printf(" \
+Показать сертификат - 1 \tИнформация о сертификате - 2 \n \
+Подписать данные - 3 \t\tПроверить данные - 4 \n \
+Хэшировать данные - 5 \t\tПодписать хэш-данные - 6 \n \
+Подписать XML - 7 \t\tПроверить XML - 8 \n \
+Подписать WSSE - 9 \t\tПроверить WSSE - 10 \n \
+Получить сертификат из CMS -11\tПолучить сертификат из XML - 12 \n \
+Получить время подписи - 13 \tПроверка сертификата - 14 \n \
+Подписать файл - 15   \t\tПодпись/Проверка множественной подписи - 16 \n \
+Подписать архив - 17 \t\tПроверить подписанный архив - 18\n \
+Получить сертификат из подписанного архива -19\n \
+Выход - 0\t\t\tСмена хранилища сертификатов - 100\n\n");
 		printf("Введите номер: ");
 		scanf("%d", &number);
 		switch (number) {
@@ -282,7 +292,12 @@ int main() {
 
 				memset(outSign1, 0, strlen((const char*)outSign1));
 
-				printf("\t\tВыберите тип подписи: \n\n\t1) CMS-подпись. Без метки времени\n\t2) CMS-подпись. С меткой времени\n\t3) Сырая подпись (DraftSign)\n\t4) Данные хранятся отдельно\n\t5) Подпись данных в формате BASE64\n");
+				printf("\t\tВыберите тип подписи: \n\n\t\
+1) CMS-подпись. Без метки времени\n\t\
+2) CMS-подпись. С меткой времени\n\t\
+3) Сырая подпись (DraftSign)\n\t\
+4) Данные хранятся отдельно\n\t\
+5) Подпись данных в формате BASE64\n");
 
 				int N;
 				scanf("%d", &N);
@@ -836,6 +851,30 @@ int main() {
 				printf("\n_____________________________________________________________________\n\n");
 				break;
 			}
+			case 19: //Получить сертификат из подписанного архива
+			{
+				printf("\n_____________________________________________________________________\n\n");
+
+				unsigned long flags = 0;
+				const char* filePath = "primer/sign15.zip";
+
+				int outCertFromZIPLength = 32768;
+				char outCertFromZIP[outCertFromZIPLength ];
+
+				kc_funcs->KC_getCertFromZipFile((char *)filePath,  flags, inSignId, outCertFromZIP, &outCertFromZIPLength);
+            	
+
+            	int errLen = 65534;
+				char err_str[errLen ];
+				rv = kc_funcs->KC_GetLastErrorString(&err_str[0], &errLen);
+
+				if(rv>0){printf("Error: %x\n%s\n\n", rv, err_str );}
+				else {printf("%s\n",outCertFromZIP);}
+
+
+				printf("\n_____________________________________________________________________\n\n");
+				break;
+			}
 
 			case 0: //Выход
 			{
@@ -843,16 +882,15 @@ int main() {
 
 				break;
 			}
-			default:
-			{
-				printf("\n\nНеверная команда! Попоробуйте еще раз\n\n\n");
-			}
 			case 100: //Смена хранилища сертификатов
 			{
 				printf("Смена ключа!\n");
 				Rep_Cert = 32;
 				break;
-
+			}
+			default:
+			{
+				printf("\n\nНеверная команда! Попоробуйте еще раз\n\n\n");
 			}
 		}
 	} while(number != 0);

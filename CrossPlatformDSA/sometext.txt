@@ -1,1 +1,1 @@
-text sdk_gost_activity
+sdk_gost_activity_yesCallback

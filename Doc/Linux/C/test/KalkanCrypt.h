@@ -138,6 +138,9 @@ extern "C" {
 #define KC_PROXY_AUTH		0x00004000
 #define KC_IN_FILE			0x00008000
 #define KC_NOCHECKCERTTIME	0x00010000
+#define KC_HASH_SHA256		0x00020000
+#define KC_HASH_GOST95		0x00040000
+
 
 //---------------------------------------------------------------------------------------
 
@@ -241,19 +244,8 @@ extern "C" {
 
 //---------------------------------------------------------------------------------------
 
-typedef struct {
-	char name[255];
-	char label[255];
-	int slot_id;
-} kc_tokens_st;
-
-typedef struct {
-	char cert_id[2];
-	char cert_label[50];
-} kc_cert_st;
 
 typedef struct stKCFunctions {
-	//char version[5];
 	unsigned long(*KC_Init)(void);
 
 	unsigned long(*KC_GetTokens)(unsigned long storage, char *tokens, unsigned long *tk_count);
@@ -272,12 +264,10 @@ typedef struct stKCFunctions {
 
 	unsigned long(*SignData)(char *alias, int flags, char *inData, int inDataLength, unsigned char *inSign, int inSignLen, unsigned char *outSign, int *outSignLength);
 	unsigned long(*SignXML)(char *alias, int flags, char *inData, int inDataLength, unsigned char *outSign, int *outSignLength, char *signNodeId, char *parentSignNode, char *parentNameSpace);
-	//unsigned long(*SignSoap)(char *alias, int flags, char *inData, int inDataLength, unsigned char *outSign, int outSignLength);
 
 	unsigned long(*VerifyData)(char *alias, int flags, char *inData, int inDataLength, unsigned char *inoutSign, int inoutSignLength, 
 		char *outData, int *outDataLen, char *outVerifyInfo, int *outVerifyInfoLen, int inCertID, char *outCert, int *outCertLength);
 	unsigned long(*VerifyXML)(char *alias, int flags, char *inData, int inDataLength, char *outVerifyInfo, int *outVerifyInfoLen);
-	//unsigned long(*VerifySoap)(char *alias, int flags, char *inData, int inDataLength, char *outVerifyInfo);
 
 	unsigned long(*KC_getCertFromXML)(const char* inXML, int inXMLLength, int inSignID, char *outCert, int *outCertLength);
 	unsigned long(*KC_getSigAlgFromXML)(const char* xml_in, int xml_in_size, char *retSigAlg, int *retLen);
@@ -297,8 +287,11 @@ typedef struct stKCFunctions {
 
 	unsigned long (*ZipConVerify)(char *inZipFile, int flags, char *outVerifyInfo, int *outVerifyInfoLen);
 	unsigned long (*ZipConSign)(char *alias, const char *filePath, const char *name, const char *outDir, int flags);
+	unsigned long(*KC_getCertFromZipFile)(char* inZipFile, int flags, int inSignID, char *outCert, int *outCertLength);
 
 } stKCFunctionsType;
+
+
 
 
 //---------------------------------------------------------------------------------------

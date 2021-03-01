@@ -116,11 +116,13 @@ namespace CrossPlatformDSA
         /// <returns></returns>
         public static byte[] GetBytes(this string str)
         {
-            byte[] arr = new byte[str.Length];
-            for (int i = 0; i < arr.Length; i++)
-            {
-                arr[i] = Convert.ToByte(str[i]);
-            }
+            //byte[] arr = new byte[str.Length];
+            //for (int i = 0; i < arr.Length; i++)
+            //{
+            //    arr[i] = Convert.ToByte(str[i]);
+
+            //}
+            byte[] arr = Encoding.UTF8.GetBytes(str);
             return arr;
         }
         /// <summary>
@@ -128,28 +130,28 @@ namespace CrossPlatformDSA
         /// </summary>
         /// <param name="arr"></param>
         /// <returns></returns>
+        //public static string GetString(this byte[] arr)
+        //{
+        //    StringBuilder stringBuilder = new StringBuilder(200);
+        //    string result = "";
+        //    for (int i = 0; i < arr.Length; i++)
+        //    {
+        //        char symbol = Convert.ToChar(arr[i]);
+        //        if (symbol != '\0')
+        //        {
+        //            stringBuilder.Append(symbol);
+        //        }
+        //        else
+        //        {
+        //            break;
+        //        }
+
+        //    }
+        //    result = stringBuilder.ToString();
+        //    return result;
+        //}
+
         public static string GetString(this byte[] arr)
-        {
-            StringBuilder stringBuilder = new StringBuilder(200);
-            string result = "";
-            for (int i = 0; i < arr.Length; i++)
-            {
-                char symbol = Convert.ToChar(arr[i]);
-                if (symbol != '\0')
-                {
-                    stringBuilder.Append(symbol);
-                }
-                else
-                {
-                    break;
-                }
-
-            }
-            result = stringBuilder.ToString();
-            return result;
-        }
-
-        public static string GetString2(this byte[] arr)
         {
             StringBuilder stringBuilder = new StringBuilder(200);
             string result = "";

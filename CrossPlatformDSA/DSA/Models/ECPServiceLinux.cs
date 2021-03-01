@@ -22,37 +22,14 @@ namespace CrossPlatformDSA.DSA.Models
         }
         DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc); // Время в формате unix систем
         public string CENTER_DETERMINED_MESSAGE = "Удостоверяющий центр опознан";
-        private string OCSP_PATH = "http://ocsp.pki.gov.kz/";
+        //private string OCSP_PATH = "http://ocsp.pki.gov.kz/";
+        private string OCSP_PATH = "http://test.pki.gov.kz/ocsp/";
         const string LIB_NAME = "kalkancryptwr-64";
         const int LENGTH = 64768;
         const int MINLENTH = 2000;
-        //byte[] outData = new byte[LENGTH],
-       // errStr = new byte[LENGTH],
-       // byte[] outVerifyInfo = new byte[LENGTH],
-        //outCert = new byte[LENGTH],
-        //byte[] outSign = new byte[LENGTH],
-        //signNodeId = new byte[LENGTH],
-        //parentSignNode = new byte[LENGTH],
-        //parentNameSpace = new byte[LENGTH],
-        //outDataInfo = new byte[LENGTH];
-       // ocspPath = new byte[LENGTH],
-       // outInfo = new byte[LENGTH];
         int inCertID = 1;
-       
-
-        //int bufSize = 10000;
-
-        // long currentLocalUnixTime;
-        //int outDataLen = LENGTH,
-        //int outVerifyInfoLen = LENGTH,
-        // outCertLength = LENGTH,
-        //int outSignLength = LENGTH,
-        // outDataInfoLength = LENGTH;
-        // outInfoLength=LENGTH;
-
-
-
-
+        
+        
         [DllImport(LIB_NAME, CallingConvention = CallingConvention.StdCall)]
         public static extern ulong Init();
 
@@ -173,11 +150,16 @@ namespace CrossPlatformDSA.DSA.Models
                   //(int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_WITH_TIMESTAMP;
             // Проверяем отметку времени
             userCertInfo.TSP_exists = ValidateTimeSignuture(cms);
+            if (!userCertInfo.TSP_exists.Value)
+            {
+                return res;
+            }
+
             // вытаскиваем сертификат для дальнейшей работы
             codeError = VerifyData(ref alias, kalkanFlag, ref inData[0], inData.Length, ref inoutSign[0], inoutSign.Length,
                                     out outData[0], out outDataLen, out outVerifyInfo[0], out outVerifyInfoLen,
                                     inCertID, out outCert[0], out outCertLength);
-            codeError = KC_GetLastErrorString(ref errStr[0], ref bufSize);
+            KC_GetLastErrorString(ref errStr[0], ref bufSize);
             _appLog.WriteLog("VerifyData Output::: " +
                "||kalkanFlag - " + kalkanFlag.ToString() +
                "||codeError - " + codeError.ConvertToHexError() +
@@ -187,23 +169,25 @@ namespace CrossPlatformDSA.DSA.Models
                "||count bytes outCert - " + outCert.Length);
             userCertInfo.ErrorExpiredOrInvalidWithoutKC_NOCHECKCERTTIME = codeError.SpecificCodeError(errStr.GetString(), "проверка успешная без флага KC_NOCHECKCERTTIME");
             codeErrorStr = codeError.ConvertToHexError();
-            if(codeErrorStr == "0x08F00042")
-            {
-                bufSize = MINLENTH;
-                kalkanFlag |= (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_NOCHECKCERTTIME;
-                codeError = VerifyData(ref alias, kalkanFlag, ref inData[0], inData.Length, ref inoutSign[0], inoutSign.Length,
-                                     out outData[0], out outDataLen, out outVerifyInfo[0], out outVerifyInfoLen,
-                                     inCertID, out outCert[0], out outCertLength);
-                codeError = KC_GetLastErrorString(ref errStr[0], ref bufSize);
-                _appLog.WriteLog("VerifyData Output::: " +
-               "||kalkanFlag - " + kalkanFlag.ToString() +
-               "||codeError - " + codeError.ConvertToHexError() +
-               "||errStr - " + errStr.GetString() +
-               "||outData - " + outData.GetString() +
-               "||outVerifyInfo - " + outVerifyInfo.GetString() +
-               "||count bytes outCert - " + outCert.Length);
-                userCertInfo.WarningExpiredOrInvalidWithKC_NOCHECKCERTTIME = codeError.SpecificCodeError(errStr.GetString(), null);
-            }
+           
+           
+            //if(codeErrorStr == "0x08F00042")
+            //{
+            //    bufSize = MINLENTH;
+            //    kalkanFlag |= (int)KalkanCryptCOMLib.KALKANCRYPTCOM_FLAGS.KC_NOCHECKCERTTIME;
+            //    codeError = VerifyData(ref alias, kalkanFlag, ref inData[0], inData.Length, ref inoutSign[0], inoutSign.Length,
+            //                         out outData[0], out outDataLen, out outVerifyInfo[0], out outVerifyInfoLen,
+            //                         inCertID, out outCert[0], out outCertLength);
+            //    codeError = KC_GetLastErrorString(ref errStr[0], ref bufSize);
+            //    _appLog.WriteLog("VerifyData Output::: " +
+            //   "||kalkanFlag - " + kalkanFlag.ToString() +
+            //   "||codeError - " + codeError.ConvertToHexError() +
+            //   "||errStr - " + errStr.GetString() +
+            //   "||outData - " + outData.GetString() +
+            //   "||outVerifyInfo - " + outVerifyInfo.GetString() +
+            //   "||count bytes outCert - " + outCert.Length);
+            //    userCertInfo.WarningExpiredOrInvalidWithKC_NOCHECKCERTTIME = codeError.SpecificCodeError(errStr.GetString(), null);
+            //}
             if (codeError == 0)
             {
                 userCertInfo.CMSvalidateMessage = codeError.SpecificCodeError(errStr.GetString(), "Цифровая подпись прошла проверку");
@@ -223,10 +207,18 @@ namespace CrossPlatformDSA.DSA.Models
                     {
                         // Проверка сертификата на отозванность на основе удостоверяющего центра OCSP
                         userCertInfo.validCertificateMessage_ocsp = ValidateSertificate_OCSP(outCert);
+                        if (!userCertInfo.validCertificateMessage_ocsp.Value)
+                        {
+                            return false;
+                        }
                         // Проверка сертификата на отозванность на основе скачаного файла crl в котором находится список отозванных сертификатов из pki.gov.kz 
                         // Срок годности crl файла 1 день. Если мы хотим пользоваться crl нам нужно каждый день скачивать из https://pki.gov.kz/ новый crl файл, иначе он будет считаться истекшим
                         // ошибка будет такого рода crl expired
                         userCertInfo.validCertificateMessage_crl = ValidateSertificate_CRl(outCert);
+                        if (!userCertInfo.validCertificateMessage_crl.Value)
+                        {
+                            return false;
+                        }
                         res = true;
                     }
                     else
@@ -252,11 +244,12 @@ namespace CrossPlatformDSA.DSA.Models
             _appLog.WriteLog("Начало метода GetInfo on Linux");
             string outCert = "";
             UserCertInfo userCertInfo = null;
+            // на основе этого списка будет извлекаться инфо из сертификата
             Dictionary<string, int> userInfoList = new UserCertInfo().UserInfoList();
             try
             {
                 outCert = GetCertFromCms(cms);
-                userCertInfo = GetUserInfo(Encoding.UTF8.GetBytes(outCert), userInfoList);
+                userCertInfo = GetUserInfo(outCert.GetBytes(), userInfoList);
                 userCertInfo.SignTime = GetTimeSignuture(cms);
 
             }
@@ -289,7 +282,7 @@ namespace CrossPlatformDSA.DSA.Models
             int bufSize = MINLENTH;
 
             // Clean byte[] cert from empty bytes(0)
-            var certString = cert.GetString2();
+            var certString = cert.GetString();
             cert = certString.GetBytes();
 
             codeError = X509ValidateCertificate(ref cert[0], cert.Length, oCSPType, ref ocspPath[0], currentLocalUnixTime, out outInfo[0], out outInfoLength);
@@ -324,8 +317,8 @@ namespace CrossPlatformDSA.DSA.Models
             byte[] outAlg = new byte[MINLENTH];
             int outInfoLength = MINLENTH;
             int outAlgLength= MINLENTH;
-            string pathRSA = Path.Combine(Environment.CurrentDirectory, "nca_rsa.crl");
-            string pathGOST = Path.Combine(Environment.CurrentDirectory, "nca_gost.crl");
+            string pathRSA = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "crlFiles", "nca_rsa.crl");
+            string pathGOST = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "crlFiles", "nca_gost.crl");
             byte[] crlPathRSA = new byte[pathRSA.Length];
             byte[] crlPathGOST = new byte[pathGOST.Length];
             crlPathRSA = Encoding.UTF8.GetBytes(pathRSA);
@@ -334,7 +327,7 @@ namespace CrossPlatformDSA.DSA.Models
             int bufSize = MINLENTH;
 
             // Clean byte[] cert from empty bytes(0)
-            var certString = cert.GetString2();
+            var certString = cert.GetString();
             cert = certString.GetBytes();
 
             // узнаем алгоритм шифрования
@@ -353,17 +346,17 @@ namespace CrossPlatformDSA.DSA.Models
                 codeError = X509ValidateCertificate(ref cert[0], cert.Length, cRLPType, ref crlPathRSA[0], currentLocalUnixTime, out outInfo[0], out outInfoLength);
                 KC_GetLastErrorString(ref errStr[0], ref bufSize);
                 _appLog.WriteLog("X509ValidateCertificate Output::: " +
-               "||crlPathRSA - " + crlPathRSA.GetString2() +
+               "||crlPathRSA - " + crlPathRSA.GetString() +
                "||codeError - " + codeError.ConvertToHexError() +
-               "||errStr - " + errStr.GetString2() +
-               "||outInfo - " + outInfo.GetString2());
+               "||errStr - " + errStr.GetString() +
+               "||outInfo - " + outInfo.GetString());
                 if (codeError == 0)
                 {
-                    keyValue = codeError.SpecificCodeError(errStr.GetString2(), CENTER_DETERMINED_MESSAGE);
+                    keyValue = codeError.SpecificCodeError(errStr.GetString(), CENTER_DETERMINED_MESSAGE);
                 }
                 else
                 {
-                    keyValue = codeError.SpecificCodeError(errStr.GetString2(), null);
+                    keyValue = codeError.SpecificCodeError(errStr.GetString(), null);
                 }
             }
             else if (alg.Contains("GOST"))
@@ -491,7 +484,8 @@ namespace CrossPlatformDSA.DSA.Models
             if (codeError == 0)
             {
                 _appLog.WriteLog("Завершение метода GetCertFromCms on Linux");
-                return Encoding.UTF8.GetString(outCert, 0, outCertLength);
+                //  return Encoding.UTF8.GetString(outCert, 0, outCertLength);
+                return outCert.GetString();
             }
             else
             {
@@ -511,6 +505,8 @@ namespace CrossPlatformDSA.DSA.Models
             string res;
             try
             {
+                var certString = cert.GetString();
+                cert = certString.GetBytes();
                 foreach (var info in userInfoList)
                 {
                     codeError = X509CertificateGetInfo(ref cert[0], cert.Length, info.Value, out outData[0], ref outDataLength);
@@ -519,7 +515,7 @@ namespace CrossPlatformDSA.DSA.Models
                         "||outData - " + outData.GetString());
                     //  res = Encoding.UTF8.GetString(outData, 0, outDataLength);
                     //res = Encoding.UTF8.GetString(outData);
-                    res = outData.GetString2();
+                    res = outData.GetString();
                     PropertyInfo property = type.GetProperty(info.Key);
                     property.SetValue(userCertInfo, res);
                 }
@@ -538,7 +534,7 @@ namespace CrossPlatformDSA.DSA.Models
             try
             {
                 //byte[] bytesFromBase64 = Convert.FromBase64String(Encoding.UTF8.GetString(data));
-                byte[] bytesFromBase64 = Convert.FromBase64String(data.GetString2());
+                byte[] bytesFromBase64 = Convert.FromBase64String(data.GetString());
                 System.IO.File.WriteAllBytes(System.IO.Path.Combine(Environment.CurrentDirectory, "sometext.txt"), bytesFromBase64);
                 res = true;
             }

@@ -517,8 +517,8 @@ while($number != 0)
 		case 15: //Использовать Proxy
 		{
 			$flag_proxy = $KC_PROXY_AUTH;
-			$inProxyAddr = "192.168.39.241";
-			$inProxyPort = "9090";
+			$inProxyAddr = "";
+			$inProxyPort = "";
 			$inUser = ""; 
 			$inPass = "";
 			$err = KalkanCrypt_SetProxy( $flag_proxy, $inProxyAddr, $inProxyPort, $inUser, $inPass);

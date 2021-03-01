@@ -2,9 +2,9 @@
 
 
 
-1) Скопировать libkalkancryptwr-64.so и libkalkancryptwr-64.so.1.1.0 в /usr/lib/. Для этого выполните команду:
+1) Скопировать libkalkancryptwr-64.so и libkalkancryptwr-64.so.1.1.1 в /usr/lib/. Для этого выполните команду:
 	
-	sudo cp -f libkalkancryptwr-64.so libkalkancryptwr-64.so.1.1.0 /usr/lib/ 
+	sudo cp -f libkalkancryptwr-64.so libkalkancryptwr-64.so.1.1.1 /usr/lib/ 
 
 
 
@@ -25,8 +25,6 @@
 
 5) Запустите MAKEFILE.
  
-
-
 
 
 
